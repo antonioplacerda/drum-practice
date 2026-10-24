@@ -1,0 +1,1840 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Drum Ladder</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+:root {
+  /* Layout: one phone-width column. The practice screen leads with the tempo and a row of tally boxes that fill bar by bar, then the click controls and the notation. */
+  --bg: #eff1ef;
+  --surface: #ffffff;
+  --ink: #171b19;
+  --muted: #5a6560;
+  --line: #d5dad7;
+  --accent: #8a5a0c;
+  --accent-ink: #ffffff;
+  --accent-soft: #f1e6cf;
+  --good: #23744a;
+  --bad: #a8362d;
+  --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111412;
+    --surface: #1a1e1c;
+    --ink: #e8ebe8;
+    --muted: #9ba6a1;
+    --line: #2c332f;
+    --accent: #e2ab45;
+    --accent-ink: #1a1304;
+    --accent-soft: #2a2415;
+    --good: #5cc88f;
+    --bad: #f0857b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111412;
+  --surface: #1a1e1c;
+  --ink: #e8ebe8;
+  --muted: #9ba6a1;
+  --line: #2c332f;
+  --accent: #e2ab45;
+  --accent-ink: #1a1304;
+  --accent-soft: #2a2415;
+  --good: #5cc88f;
+  --bad: #f0857b;
+  color-scheme: dark;
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.45;
+}
+* { box-sizing: border-box; }
+.wrap {
+  max-width: 560px;
+  margin: 0 auto;
+  padding-block: 14px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 30px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 22px 0 8px;
+  text-wrap: balance;
+}
+p { margin: 0 0 10px; }
+.muted { color: var(--muted); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+.tab {
+  flex: 1;
+  min-height: 46px;
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  color: var(--muted);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.btn {
+  min-height: 52px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: 600 17px var(--body);
+  cursor: pointer;
+}
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.danger { color: var(--bad); border-color: var(--bad); }
+.btn.big { width: 100%; min-height: 60px; font-size: 19px; }
+.btn.small { min-height: 42px; padding: 0 14px; font-size: 15px; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn:focus-visible, .tab:focus-visible, .lines button:focus-visible, .chip:focus-visible, textarea:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+label.lbl { display: block; font-weight: 600; margin-bottom: 6px; }
+textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 15px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  resize: vertical;
+}
+#note { font: 16px/1.5 var(--body); min-height: 90px; }
+.hint {
+  background: var(--accent-soft);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 15px;
+}
+.help { margin: 10px 0 0; font-size: 15px; }
+.help summary { cursor: pointer; font-weight: 600; min-height: 36px; display: flex; align-items: center; }
+.help pre {
+  margin: 8px 0;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: 14px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  overflow-x: auto;
+}
+.help code { font: 14px ui-monospace, "SF Mono", Menlo, Consolas, monospace; background: var(--surface); padding: 0 4px; border-radius: 4px; }
+.tpl { margin: 14px 0 0; }
+.tpl select, .tpl input[type=text] { flex: 1; min-width: 0; min-height: 44px; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; }
+.ex { display: flex; gap: 10px; margin: 10px 0 0; }
+.ex .btn { flex: 1; }
+.sec { margin: 22px 0 0; }
+.sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 2px; }
+.sec-head h2 { margin: 0; }
+.sec-head .mins { color: var(--muted); font-size: 15px; flex: none; }
+.sec-rule { color: var(--muted); font-size: 14px; margin: 0 0 6px; }
+.cards { list-style: none; margin: 6px 0 10px; padding: 0; border-top: 1px solid var(--line); }
+.cards li { padding: 11px 2px; border-bottom: 1px solid var(--line); }
+.cards .top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.cards .name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.cards .meta { color: var(--muted); font-size: 14px; text-align: right; flex: none; font-variant-numeric: tabular-nums; }
+.cards .empty { color: var(--muted); }
+.rules {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 8px 12px;
+  margin: 22px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+}
+.rules dt {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.rules dd { margin: 0; color: var(--muted); }
+.runbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 4px; }
+.secname { font-family: var(--display); font-weight: 700; font-size: 18px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+.rt-detail { margin: 8px 0 12px; font-size: 16px; line-height: 1.45; text-align: left; }
+.rt-tempo { font-family: var(--display); font-size: 40px; font-weight: 700; }
+.lines li.done .name { text-decoration: line-through; }
+.notice { background: var(--accent-soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 6px 0 10px; font-weight: 600; }
+.plan { margin: 14px 0 0; padding: 12px; border: 1px solid var(--accent); border-radius: 10px; }
+.plan p { margin: 0 0 10px; }
+.pick { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--muted); margin: 2px 0 0; }
+.pick input { width: 20px; height: 20px; }
+.parth { margin: 16px 0 4px; font-size: 17px; }
+.secname .ty { color: var(--muted); font-weight: 600; margin-left: 6px; }
+.clock { font-family: var(--display); font-weight: 700; font-size: 34px; font-variant-numeric: tabular-nums; letter-spacing: 0.03em; }
+.now { padding: 6px 0 12px; }
+.now .label { font-weight: 600; font-size: 18px; overflow-wrap: anywhere; }
+.now .stepl { font-weight: 600; color: var(--accent); font-size: 16px; }
+.tempo {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(92px, 32vw, 140px);
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+}
+.tempo span { font-size: 26px; letter-spacing: 0.08em; margin-left: 8px; color: var(--muted); }
+.ticks { display: flex; gap: 3px; margin: 14px 0 8px; }
+.tick { flex: 1; height: 34px; border: 2px solid var(--line); border-radius: 3px; }
+.tick.on { background: var(--accent); border-color: var(--accent); }
+.tick.cur { border-color: var(--accent); background: linear-gradient(to right, var(--accent) var(--p, 0%), transparent var(--p, 0%)); }
+.tick.g { margin-right: 7px; }
+.count { color: var(--muted); font-variant-numeric: tabular-nums; min-height: 1.45em; }
+.beats { display: flex; gap: 8px; margin-top: 8px; }
+.bd { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line); }
+.bd.on { background: var(--accent); border-color: var(--accent); }
+.bd.ci { background: var(--muted); border-color: var(--muted); }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.clickbox { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }
+.cl-h { font-weight: 600; margin-bottom: 8px; }
+.chips { display: flex; gap: 10px; }
+.chip {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  font: 700 22px var(--display);
+  cursor: pointer;
+}
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.lines { list-style: none; margin: 18px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.lines li { border-bottom: 1px solid var(--line); }
+.lines button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 8px;
+  background: none;
+  border: 0;
+  border-left: 4px solid transparent;
+  color: var(--ink);
+  font: 600 16px var(--body);
+  text-align: left;
+  cursor: pointer;
+}
+.lines button[aria-current="true"] { border-left-color: var(--accent); background: var(--accent-soft); }
+.lines button:disabled { cursor: default; }
+.lines .name { min-width: 0; overflow-wrap: anywhere; }
+.lines .meta { flex: none; font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.lines .done .meta { color: var(--good); font-weight: 600; }
+.empty-state { padding: 26px 0; }
+.res { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-variant-numeric: tabular-nums; }
+.res th, .res td { text-align: left; padding: 9px 6px; border-bottom: 1px solid var(--line); font-size: 15px; vertical-align: top; }
+.res th { color: var(--muted); font-weight: 600; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; }
+.table-scroll { overflow-x: auto; }
+.row2 { display: flex; gap: 10px; margin-top: 12px; }
+.row2 .btn { flex: 1; }
+.mem { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.mem li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--line); }
+.mem .name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.mem .meta { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.session { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.session .when { font-family: var(--display); font-weight: 700; font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; }
+.session ul { margin: 6px 0 0; padding: 0; list-style: none; font-size: 15px; font-variant-numeric: tabular-nums; }
+.session .note { margin: 6px 0 0; color: var(--muted); font-size: 15px; overflow-wrap: anywhere; }
+.foot { margin-top: 26px; color: var(--muted); font-size: 13px; }
+
+/* methods */
+.cf { margin: 12px 0; }
+.cf input[type="number"] {
+  width: 110px;
+  min-height: 46px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 600 18px var(--body);
+  font-variant-numeric: tabular-nums;
+}
+.cf input:focus-visible, .chk input:focus-visible, .wt input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.cf-h { color: var(--muted); font-size: 14px; margin-top: 3px; }
+.mcard { border-top: 1px solid var(--line); margin-top: 22px; padding-top: 2px; }
+.mcard h2 span { font-size: 15px; font-weight: 600; letter-spacing: 0.04em; color: var(--muted); margin-left: 6px; }
+.chk { display: flex; align-items: center; gap: 12px; min-height: 44px; cursor: pointer; }
+.chk input, .wt input { width: 22px; height: 22px; accent-color: var(--accent); flex: none; margin: 0; }
+.wt { width: 100%; border-collapse: collapse; margin: 8px 0; }
+.wt th, .wt td { padding: 6px 4px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: middle; }
+.wt thead th { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; text-align: center; }
+.wt thead th:first-child { text-align: left; }
+.wt tbody th { text-align: left; font-weight: 600; }
+.wt td { text-align: center; }
+.mbtns { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+
+/* notation */
+.nt { margin-top: 8px; }
+.nt-err { color: var(--bad); font-size: 14px; }
+.nt-svg { display: block; max-width: 100%; height: auto; color: var(--ink); }
+.nt-svg .sl { stroke: var(--muted); stroke-width: 1; }
+.nt-svg .bl { stroke: currentColor; stroke-width: 1.4; }
+.nt-svg .ct { fill: var(--muted); font: 11px var(--body); }
+.nt-svg .cn { fill: var(--ink); font: 700 11px var(--body); }
+.nt-svg .stR { fill: var(--ink); font: 700 14px var(--body); }
+.nt-svg .stL { fill: var(--accent); font: 700 14px var(--body); }
+</style>
+
+<div class="wrap">
+  <h1>Drum Ladder</h1>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="t-week" data-tab="week" aria-selected="true">Week</button>
+    <button class="tab" role="tab" id="t-practice" data-tab="practice" aria-selected="false">Practice</button>
+    <button class="tab" role="tab" id="t-log" data-tab="log" aria-selected="false">Log</button>
+    <button class="tab" role="tab" id="t-methods" data-tab="methods" aria-selected="false">Methods</button>
+  </div>
+
+  <section id="p-week" role="tabpanel" aria-labelledby="t-week">
+    <p class="muted">Group exercises under a <code>#</code> heading. Each section is practised on its own, with the rules of its type.</p>
+    <p class="hint" id="hintEx">Example week. Replace these lines with your own.</p>
+    <label class="lbl" for="weekText">This week's exercises</label>
+    <textarea id="weekText" spellcheck="false"></textarea>
+    <div class="ex">
+      <button class="btn small" id="addStick" type="button">Insert Stick Control example</button>
+      <button class="btn small" id="addEx" type="button">Insert Carmine example</button>
+    </div>
+    <div class="tpl">
+      <div class="lbl">Templates</div>
+      <div class="ex"><select id="tplSel" aria-label="Template"></select></div>
+      <div class="ex"><button class="btn small" id="tplAdd" type="button">Add to week</button>
+        <button class="btn small" id="tplReplace" type="button">Replace week</button>
+        <button class="btn small" id="tplDel" type="button">Delete</button></div>
+      <div class="ex"><input id="tplName" type="text" maxlength="40" placeholder="Name for the current text" aria-label="Template name">
+        <button class="btn small" id="tplSave" type="button">Save text as template</button></div>
+    </div>
+    <details class="help">
+      <summary>How to write sections and notes</summary>
+      <p>A line starting with <code>#</code> starts a section. Add the minutes after a comma. Every line under it is an exercise.</p>
+      <p>The type of section sets the rules. It comes from the name (Stick: ladder, Sync: four-way, Carmine, groove or fill: groove), or write it after a comma: <code>ladder</code>, <code>four-way</code>, <code>groove</code> or <code>routine</code>.</p>
+      <p>A routine is a checklist (hand speed, warm-ups). Each line is <code>Name 80 BPM 2 min: details</code>. Tempo and time are optional. With a time the item moves on by itself. With a tempo the metronome plays it after a bar of count-in and adds 1 BPM after every 4 clean bars. Press Mistake and those 4 bars start again. Next session the item starts 1 BPM above where it started this time. If every item has a time, the section runs for their total.</p>
+      <p>Under an exercise, add one line per instrument to show its notes. One character per note position, <code>-</code> is a rest, <code>|</code> splits bars.</p>
+<pre># Carmine, 15 min
+Carmine groove p20 #1
+HH x-x-x-x-x-x-x-x-
+SD ----o-------o---
+BD o-------o-------</pre>
+      <p>Instruments: <code>HH</code> hi-hat, <code>CY</code> ride, <code>CR</code> crash, <code>SD</code>, <code>HT</code>, <code>MT</code>, <code>FT</code> toms, <code>BD</code> kick, <code>HF</code> hi-hat foot. Use 4, 8 or 16 characters per bar (quarters, eighths, sixteenths). Instruments in the same bar can use different lengths. <code>g</code> is a ghost note, <code>o</code> on HH is open. 4/4 only.</p>
+      <p>Triplets: write 12 characters per bar (three per beat, eighth-note triplets) or 24 (six per beat). They get a bracket with a 3. A beat is a triplet beat as soon as one note falls off the straight grid, so keep each beat either straight or triplet.</p>
+<pre>HH x-xx-xx-xx-x
+SD ---o-----o--
+BD o-----o-----</pre>
+      <p>Sticking: write <code>r</code> or <code>l</code> instead of <code>o</code>, and <code>b</code> for both hands. The letters appear under the notes (R in black, L in gold).</p>
+<pre>Stick Control p5 #1 singles
+SD rlrlrlrl</pre>
+      <p>One rep is one pass of the notes, one bar at 4/4 (two bars if you write two). The boxes fill by themselves as the click runs.</p>
+    </details>
+    <div id="secs"></div>
+    <dl class="rules" id="rulesDl"></dl>
+  </section>
+
+  <section id="p-practice" role="tabpanel" aria-labelledby="t-practice" hidden>
+    <div id="practice"></div>
+  </section>
+
+  <section id="p-log" role="tabpanel" aria-labelledby="t-log" hidden>
+    <div id="log"></div>
+  </section>
+
+  <section id="p-methods" role="tabpanel" aria-labelledby="t-methods" hidden>
+    <div id="methods"></div>
+  </section>
+
+  <p class="foot">Saved in this browser only.</p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* LOGIC START */
+  /* ---- settings (Methods tab) ---- */
+  function defaultConf() {
+    var g = [];
+    for (var i = 0; i < 19; i++) g.push(true);
+    return {
+      drop: 10, step: 5, minutes: 10,
+      ladder: { reps: 20, floor: 60 },
+      fourway: { reps: 10, floor: 60, ways: [true, true, true, true] },
+      groove: { reps: 4, floor: 60, ways: g }
+    };
+  }
+  function clampInt(v, lo, hi, dflt) {
+    v = parseInt(v, 10);
+    if (isNaN(v)) return dflt;
+    return Math.max(lo, Math.min(hi, v));
+  }
+  function sanitizeConf(c) {
+    var d = defaultConf();
+    c = c && typeof c === 'object' ? c : {};
+    /* an older saved setup had one starting tempo for everything: it becomes each method's default */
+    var legacyFloor = clampInt(c.floor, 30, 300, 60);
+    var out = {
+      drop: clampInt(c.drop, 0, 60, d.drop),
+      step: clampInt(c.step, 1, 30, d.step),
+      minutes: clampInt(c.minutes, 1, 120, d.minutes)
+    };
+    ['ladder', 'fourway', 'groove'].forEach(function (t) {
+      var src = c[t] && typeof c[t] === 'object' ? c[t] : {};
+      out[t] = {
+        reps: clampInt(src.reps, 1, 100, d[t].reps),
+        floor: clampInt(src.floor, 30, 300, legacyFloor)
+      };
+      if (d[t].ways) {
+        var n = d[t].ways.length;
+        out[t].ways = [];
+        for (var i = 0; i < n; i++) {
+          out[t].ways.push(Array.isArray(src.ways) && src.ways.length === n ? (src.ways[i] !== false && src.ways[i] !== 0) : true);
+        }
+        if (!out[t].ways.some(Boolean)) out[t].ways[0] = true;
+      }
+    });
+    return out;
+  }
+  var CONF = sanitizeConf(null);
+  var CFG = { drop: 10, step: 5, minutes: 10 };
+  function configure(c) {
+    CONF = sanitizeConf(c);
+    CFG.drop = CONF.drop; CFG.step = CONF.step; CFG.minutes = CONF.minutes;
+  }
+  function floorFor(type) { return (CONF[type] || CONF.ladder).floor; }
+  /* routine items with a tempo: +bpm after every `bars` clean bars, and next session starts `next` above this session's start */
+  var RAMP = { bars: 4, bpm: 1, next: 1 };
+  function ruleText(type) {
+    if (type === 'routine') return 'A checklist. Work down it in order. An item with a time (2 min) moves on by itself, otherwise press Done. An item with a tempo (80 BPM) starts after a bar of count-in and goes up ' +
+      RAMP.bpm + ' BPM after every ' + RAMP.bars + ' clean bars. A mistake restarts those bars. Next session it starts ' + RAMP.next + ' BPM above this session\'s start.';
+    var c = CONF[type] || CONF.ladder, s = CFG.step, n;
+    if (type === 'fourway') {
+      n = c.ways.filter(Boolean).length;
+      return 'Each exercise ' + (n === 1 ? 'one way' : n + ' ways') + ' (hand plays the rhythm, foot plays the quarters), ' + c.reps +
+        ' clean reps each. Every exercise clean: +' + s + ' BPM. New lines start at ' + c.floor + ' BPM.';
+    }
+    if (type === 'groove') {
+      n = c.ways.filter(Boolean).length;
+      return 'Each exercise through ' + n + (n === 1 ? ' way' : ' ways') + ' of the method (hand pattern x hi-hat foot pattern), ' + c.reps +
+        ' clean bars each. Every exercise clean: +' + s + ' BPM. New lines start at ' + c.floor + ' BPM.';
+    }
+    return c.reps + ' clean reps on each line. Every line clean: +' + s + ' BPM and go round again. New lines start at ' + c.floor + ' BPM.';
+  }
+
+  /* "18 ways to use this book": as written, then 6 hand patterns x 3 hi-hat foot patterns */
+  var HANDS = ['R hand on cymbal (as written)', 'L hand on cymbal', 'R hand on quarter notes', 'L hand on quarter notes', 'R hand on the "&"', 'L hand on the "&"'];
+  var FEET = ['quarters', 'eighths', 'the "&"'];
+  var WAYS = (function () {
+    var out = [{ label: 'As written' }];
+    HANDS.forEach(function (h, i) {
+      FEET.forEach(function (f, j) {
+        out.push({ label: (i + 1) + 'ABC'.charAt(j) + ': ' + h + ', hi-hat foot on ' + f });
+      });
+    });
+    return out;
+  })();
+
+  var TYPES = {
+    routine: { label: 'Routine', steps: [{ label: '' }] },
+    ladder: {
+      label: 'Ladder',
+      steps: [{ label: '' }]
+    },
+    fourway: {
+      label: 'Four-way',
+      steps: [
+        { label: 'R hand + R foot' }, { label: 'R hand + L foot' },
+        { label: 'L hand + R foot' }, { label: 'L hand + L foot' }
+      ]
+    },
+    groove: {
+      label: 'Groove',
+      steps: WAYS
+    }
+  };
+
+  function typeFromName(name) {
+    if (/hand.?speed|routine|checklist/i.test(name)) return 'routine';
+    if (/sync/i.test(name)) return 'fourway';
+    if (/carmine|groove|fill|rock/i.test(name)) return 'groove';
+    return 'ladder';
+  }
+
+  var LANE = {
+    HH: { step: 9, x: true, voice: 'up' },
+    CY: { step: 9, x: true, voice: 'up' },
+    RD: { step: 9, x: true, voice: 'up' },
+    CR: { step: 10, x: true, voice: 'up', ledger: true },
+    HT: { step: 7, voice: 'up' },
+    MT: { step: 6, voice: 'up' },
+    SD: { step: 5, voice: 'up' },
+    FT: { step: 3, voice: 'up' },
+    BD: { step: 1, voice: 'down' },
+    HF: { step: -1, x: true, voice: 'down' }
+  };
+  var LANE_RE = /^\s*(HH|CY|RD|CR|HT|MT|FT|SD|BD|HF)\s*[:=]?\s*([xXoOgGrRlLbB\-._|\s]+)$/i;
+  var BARE_RE = /^[rlbRLB\-._|\s]{4,}$/;
+  var TAIL_RE = /^(.*\S)\s+([rlbRLB\-._|]{4,})$/;
+
+  function normKey(label) {
+    return label.trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  function parsePatternLines(rows) {
+    var lanes = {}, names = [], err = '';
+    rows.forEach(function (r) {
+      var name = r.name.toUpperCase();
+      var segs = r.text.split('|').map(function (s) { return s.replace(/[\s_]/g, ''); }).filter(Boolean);
+      segs.forEach(function (s) {
+        if ([4, 8, 12, 16, 24].indexOf(s.length) < 0 && !err) {
+          err = name + ' has a bar with ' + s.length + ' steps. Use 4, 8, 16 per bar, or 12 and 24 for triplets.';
+        }
+      });
+      if (!lanes[name]) names.push(name);
+      lanes[name] = segs;
+    });
+    if (err) return { error: err };
+    var nBars = 0;
+    names.forEach(function (n) { nBars = Math.max(nBars, lanes[n].length); });
+    if (!nBars) return { error: 'No notes found.' };
+    if (nBars > 16) return { error: 'Too many bars (max 16).' };
+    var bars = [];
+    for (var b = 0; b < nBars; b++) {
+      var grid = 4;
+      names.forEach(function (n) { var s = lanes[n][b]; var g = s ? (s.length === 12 || s.length === 24 ? 4 : s.length) : 0; if (g > grid) grid = g; });
+      var bar = { grid: grid, hits: [] };
+      names.forEach(function (n) {
+        var s = lanes[n][b];
+        if (!s) return;
+        for (var i = 0; i < s.length; i++) {
+          var c = s.charAt(i).toLowerCase();
+          if (c === '-' || c === '.') continue;
+          var kind = c === 'g' ? 'ghost' : (c === 'o' && (n === 'HH' || n === 'CY' || n === 'RD') ? 'open' : 'hit');
+          var stick = (c === 'r' || c === 'l' || c === 'b') ? c.toUpperCase() : null;
+          bar.hits.push({ lane: n, pos: Math.round(i * 16 / s.length * 1000) / 1000, kind: kind, stick: stick });
+        }
+      });
+      bars.push(bar);
+    }
+    return { bars: bars };
+  }
+
+  /* Returns sections: [{name, minutes, type, items:[{label,key,pattern}]}] */
+  function parseWeek(text) {
+    var seen = {}, sections = [], sec = null, cur = null;
+    function ensure() {
+      if (!sec) { sec = { name: 'Exercises', minutes: CFG.minutes, type: 'ladder', items: [] }; sections.push(sec); }
+    }
+    String(text).split(/\r?\n/).forEach(function (raw) {
+      var head = /^\s*#+\s*(.*)$/.exec(raw);
+      if (head) {
+        var t = head[1], mins = CFG.minutes, type = null;
+        var mm = /(\d{1,3})\s*min\w*/i.exec(t);
+        if (mm) { mins = Math.max(1, Math.min(120, parseInt(mm[1], 10))); t = t.replace(mm[0], ''); }
+        var tm = /\b(ladder|four-?way|4-?way|groove|routine|checklist)\b/i.exec(t);
+        if (tm) {
+          var w = tm[1].toLowerCase();
+          type = w === 'ladder' ? 'ladder' : (w === 'groove' ? 'groove' : (/routine|checklist/.test(w) ? 'routine' : 'fourway'));
+          t = t.replace(tm[0], '');
+        }
+        t = t.replace(/[\s,;:()\-]+$/g, '').replace(/^[\s,;:()\-]+/g, '').trim();
+        var name = t || 'Exercises';
+        sec = { name: name, minutes: mins, fixedMins: !!mm, type: type || typeFromName(name), items: [] };
+        sections.push(sec);
+        cur = null;
+        return;
+      }
+      var alt = raw.replace(/([rl])\/([rl])/gi, 'b');
+      if (alt !== raw && (LANE_RE.test(alt) || BARE_RE.test(alt))) raw = alt;
+      var m = LANE_RE.exec(raw);
+      if (m) {
+        if (cur) cur.rows.push({ name: m[1], text: m[2] });
+        return;
+      }
+      /* a bare sticking line: r, l, b (both hands) and bars, played on the snare */
+      var tailPat = null, rawLine = raw;
+      if (BARE_RE.test(raw) && /[rlb]/i.test(raw)) {
+        if (cur) { cur.rows.push({ name: 'SD', text: raw }); return; }
+        rawLine = raw.trim(); tailPat = raw;
+      } else {
+        var tm2 = TAIL_RE.exec(raw);
+        if (tm2 && /[rlb]/i.test(tm2[2]) && !/^\s*#/.test(raw)) { rawLine = tm2[1]; tailPat = tm2[2]; }
+      }
+      raw = rawLine;
+      var label = raw.replace(/^\s*(?:[-*•]\s+|\d+[.)]\s+)/, '').replace(/\s+/g, ' ').trim();
+      if (!label) return;
+      var key = normKey(label);
+      if (seen[key]) { cur = null; return; }
+      seen[key] = true;
+      ensure();
+      cur = { label: label, key: key, pattern: null, rows: [] };
+      if (tailPat) cur.rows.push({ name: 'SD', text: tailPat });
+      sec.items.push(cur);
+    });
+    sections.forEach(function (s) {
+      if (s.type === 'routine' && !s.fixedMins) {
+        var tot = 0, all = s.items.length > 0;
+        s.items.forEach(function (it) { var sp = splitItem(it.label); if (sp.secs) tot += sp.secs; else all = false; });
+        if (all) s.minutes = Math.max(1, Math.ceil(tot / 60));
+      }
+      s.items.forEach(function (it) {
+        if (it.rows.length) it.pattern = parsePatternLines(it.rows);
+        delete it.rows;
+      });
+    });
+    return sections.filter(function (s) { return s.items.length; });
+  }
+
+  function startTempo(last, type) {
+    var floor = floorFor(type);
+    return last == null ? floor : Math.max(floor, last - CFG.drop);
+  }
+
+  function buildSteps(type) {
+    var T = TYPES[type] || TYPES.ladder, c = CONF[type] || CONF.ladder, out = [];
+    T.steps.forEach(function (s, i) {
+      if (!c.ways || c.ways[i] !== false) out.push({ label: s.label, reps: c.reps, mask: s.mask || null, code: i });
+    });
+    if (!out.length) out.push({ label: T.steps[0].label, reps: c.reps, mask: null, code: 0 });
+    return out;
+  }
+
+  /* routine items: "Name 80 BPM 2 min: details". Tempo and time are optional. */
+  function splitItem(label) {
+    var i = label.indexOf(':'), name = i > 0 ? label.slice(0, i).trim() : label, detail = i > 0 ? label.slice(i + 1).trim() : '';
+    var bm = /(\d{2,3})\s*bpm/i.exec(name), tm = /(\d{1,3})\s*(min\w*|sec\w*|s)\b/i.exec(name);
+    var secs = tm ? parseInt(tm[1], 10) * (/^m/i.test(tm[2]) ? 60 : 1) : 0;
+    var clean = name.replace(bm ? bm[0] : '', '').replace(tm ? tm[0] : '', '').replace(/[\s,;]+/g, ' ').replace(/[\s,;]+$/, '').trim();
+    var sub = /triplet/i.test(name) ? 3 : (/16th|sixteenth/i.test(name) ? 4 : (/8th|eighth/i.test(name) ? 2 : 1));
+    return { name: clean || name, detail: detail, tempo: bm ? parseInt(bm[1], 10) : 0, secs: secs, sub: sub };
+  }
+  function itemMeta(sp) {
+    var o = [];
+    if (sp.tempo) o.push(sp.tempo + ' BPM');
+    if (sp.secs) o.push(sp.secs % 60 ? sp.secs + ' s' : sp.secs / 60 + ' min');
+    return o.join(', ');
+  }
+  function routineStart(sp, m) {
+    return sp.tempo && m && m.start ? m.start + RAMP.next : sp.tempo;
+  }
+  /* k beats into the item's clean run. Returns true when the tempo went up. */
+  function rampBeat(l, k) {
+    if (!l.tempo || k === 0 || k % (4 * RAMP.bars)) return false;
+    l.top = l.tempo;
+    l.tempo += RAMP.bpm;
+    return true;
+  }
+
+  function newSession(section, memory) {
+    var type = TYPES[section.type] ? section.type : 'ladder';
+    var minutes = section.minutes;
+    if (type === 'routine') {
+      var tot = 0, all = section.items.length > 0;
+      section.items.forEach(function (it) { var sp = splitItem(it.label); if (sp.secs) tot += sp.secs; else all = false; });
+      if (all) minutes = Math.max(1, Math.ceil(tot / 60));
+    }
+    return {
+      section: section.name,
+      type: type,
+      minutes: minutes,
+      lines: section.items.map(function (it) {
+        var m = memory[it.key];
+        var t = startTempo(m && m.last != null ? m.last : null, type);
+        if (type === 'routine') {
+          var sp = splitItem(it.label), t0 = routineStart(sp, m);
+          return { label: it.label, name: sp.name, detail: sp.detail, key: it.key, pattern: it.pattern || null, steps: buildSteps('ladder'),
+            step: 0, start: t0, tempo: t0, secs: sp.secs, sub: sp.sub, spent: 0, count: 0, done: false, top: null, mistakes: 0, slips: {} };
+        }
+        return {
+          label: it.label, key: it.key, pattern: it.pattern || null,
+          steps: buildSteps(type), step: 0,
+          start: t, tempo: t, count: 0, done: false, top: null, mistakes: 0, slips: {}
+        };
+      }),
+      active: 0, round: 1, elapsed: 0, running: false, finished: false, reason: ''
+    };
+  }
+
+  function curStep(l) { return l.steps[l.step]; }
+
+  function repBeats(l) {
+    return 4 * (l.pattern && l.pattern.bars ? l.pattern.bars.length : 1);
+  }
+
+  function completeLine(s) {
+    var l = s.lines[s.active];
+    l.done = true;
+    l.top = l.top == null ? l.tempo : Math.max(l.top, l.tempo);
+    var n = s.lines.length, found = -1;
+    for (var k = 1; k <= n; k++) {
+      var i = (s.active + k) % n;
+      if (!s.lines[i].done) { found = i; break; }
+    }
+    if (found === -1) {
+      s.lines.forEach(function (x) { x.tempo += CFG.step; x.count = 0; x.step = 0; x.done = false; });
+      s.round++;
+      s.active = 0;
+    } else {
+      s.active = found;
+    }
+  }
+
+  /* Returns null (just a rep), 'step' (a step of the line finished) or 'line' (the line finished). */
+  function addRep(s, n) {
+    var l = s.lines[s.active];
+    if (l.done) return null;
+    var st = curStep(l);
+    l.count = Math.min(st.reps, l.count + n);
+    if (l.count < st.reps) return null;
+    l.count = 0;
+    l.step++;
+    if (l.step >= l.steps.length) { completeLine(s); return 'line'; }
+    return 'step';
+  }
+
+  function mistake(s) {
+    var l = s.lines[s.active];
+    l.mistakes++;
+    l.slips[l.step] = (l.slips[l.step] || 0) + 1;
+    l.count = 0;
+  }
+
+  function results(s) {
+    if (s.type === 'routine') {
+      return s.lines.map(function (l) { return { label: l.name || l.label, key: l.key, start: l.start, top: l.top, mistakes: l.mistakes, slips: [], routine: true, ramp: !!l.start, done: !!l.done }; });
+    }
+    return s.lines.map(function (l) {
+      var slips = Object.keys(l.slips || {}).map(function (k) {
+        return { label: l.steps[k].label, n: l.slips[k] };
+      }).filter(function (x) { return x.label; });
+      return { label: l.label, key: l.key, start: l.start, top: l.top, mistakes: l.mistakes, slips: slips };
+    });
+  }
+
+  function applyResults(memory, res, type) {
+    res.forEach(function (r) {
+      if (r.top == null) return;
+      if (r.ramp) memory[r.key] = { label: r.label, start: r.start, last: r.top, type: 'routine' };
+      else if (!r.routine) memory[r.key] = { label: r.label, last: r.top, type: type || 'ladder' };
+    });
+  }
+
+  /* The notation for way w (0 = as written, 1..18 = hand pattern x hi-hat foot pattern).
+     Hand pattern: cymbal hand on the written part, on quarters or on the "&"; odd patterns
+     are played backwards (left hand on the cymbal). The hi-hat foot part is added or replaced. */
+  var CYM_HAND = { HH: 1, CY: 1, RD: 1, CR: 1 };
+  var CYM_PART = { HH: 1, CY: 1, RD: 1 };
+  function applyWay(pat, w) {
+    if (!pat || pat.error || !w) return pat;
+    var h = Math.floor((w - 1) / 3), f = (w - 1) % 3;
+    var cymHand = h % 2 === 0 ? 'R' : 'L', otherHand = cymHand === 'R' ? 'L' : 'R';
+    var mode = h < 2 ? 'written' : (h < 4 ? 'quarters' : 'and');
+    var footPos = f === 0 ? [0, 4, 8, 12] : (f === 1 ? [0, 2, 4, 6, 8, 10, 12, 14] : [2, 6, 10, 14]);
+    var handPos = mode === 'quarters' ? [0, 4, 8, 12] : [2, 6, 10, 14];
+    var lane = null;
+    pat.bars.forEach(function (b) { b.hits.forEach(function (x) { if (!lane && CYM_PART[x.lane]) lane = x.lane; }); });
+    return {
+      bars: pat.bars.map(function (b) {
+        var hits = [];
+        b.hits.forEach(function (x) {
+          if (x.lane === 'HF') return;
+          if (CYM_PART[x.lane] && mode !== 'written') return;
+          var c = { lane: x.lane, pos: x.pos, kind: x.kind, stick: x.stick || null };
+          if (!c.stick && LANE[c.lane].voice === 'up') c.stick = CYM_HAND[c.lane] ? cymHand : otherHand;
+          hits.push(c);
+        });
+        if (lane && mode !== 'written') {
+          handPos.forEach(function (p) { hits.push({ lane: lane, pos: p, kind: 'hit', stick: cymHand }); });
+        }
+        footPos.forEach(function (p) { hits.push({ lane: 'HF', pos: p, kind: 'hit', stick: null }); });
+        var grid = b.grid;
+        if (f !== 0 || mode === 'and') grid = Math.max(grid, 8);
+        return { grid: grid, hits: hits };
+      })
+    };
+  }
+
+  /* ---- notation ---- */
+  function decompose(n) {
+    var out = [];
+    [4, 2, 1].forEach(function (d) { while (n >= d) { out.push(d); n -= d; } });
+    return out;
+  }
+
+  /* 0 = ordinary beat, 3 = eighth-note triplets, 6 = sixteenth-note triplets (sextuplets) */
+  function tripOf(bar, beat) {
+    var has = 0;
+    bar.hits.forEach(function (h) {
+      if (Math.floor(h.pos / 4 + 1e-9) !== beat) return;
+      var p = h.pos - beat * 4;
+      if (Math.abs(p - Math.round(p)) < 0.01) return;
+      var q = p / (2 / 3);
+      if (Math.abs(q - Math.round(q)) < 0.02) has = Math.max(has, Math.round(q) % 2 ? 6 : 3);
+    });
+    return has;
+  }
+
+  function buildTrip(bar, voice, beat, n) {
+    var w = 4 / n, bySlot = {}, any = false;
+    bar.hits.forEach(function (h) {
+      if (LANE[h.lane].voice !== voice || Math.floor(h.pos / 4 + 1e-9) !== beat) return;
+      var sl = Math.round((h.pos - beat * 4) / w);
+      if (sl < 0 || sl >= n) return;
+      (bySlot[sl] = bySlot[sl] || []).push(h);
+      any = true;
+    });
+    if (!any) return [{ type: 'rest', p: 0, dur: 4 }];
+    var occ = Object.keys(bySlot).map(Number).sort(function (a, b) { return a - b; });
+    /* only the beat itself is played: an ordinary quarter note, no triplet sign */
+    if (occ.length === 1 && occ[0] === 0) {
+      var q = [{ type: 'note', p: 0, dur: 4, heads: bySlot[0] }];
+      q.noBracket = true;
+      return q;
+    }
+    var ev = [], d = n === 3 ? 2 : 1;
+    for (var sl2 = 0; sl2 < n; sl2++) {
+      if (bySlot[sl2]) {
+        var nx = sl2 + 1;
+        while (nx < n && !bySlot[nx]) nx++;
+        var span = nx - sl2;
+        /* triplet beat: a note followed by one empty slot is a quarter note inside the triplet */
+        if (n === 3 && span >= 2) {
+          ev.push({ type: 'note', p: sl2 * w, dur: 4, heads: bySlot[sl2] });
+          sl2 += 1;
+          if (span > 2 && sl2 + 1 < n) { ev.push({ type: 'rest', p: (sl2 + 1) * w, dur: d }); sl2 += 1; }
+        } else {
+          ev.push({ type: 'note', p: sl2 * w, dur: d, heads: bySlot[sl2] });
+        }
+      } else {
+        ev.push({ type: 'rest', p: sl2 * w, dur: d });
+      }
+    }
+    return ev;
+  }
+
+  function buildVoice(bar, voice, beat) {
+    var tn = tripOf(bar, beat);
+    if (tn) return buildTrip(bar, voice, beat, tn);
+    var byPos = {};
+    bar.hits.forEach(function (h) {
+      if (LANE[h.lane].voice !== voice) return;
+      if (Math.floor(h.pos / 4) !== beat) return;
+      var p = h.pos % 4;
+      (byPos[p] = byPos[p] || []).push(h);
+    });
+    var ps = Object.keys(byPos).map(Number).sort(function (a, b) { return a - b; });
+    var ev = [];
+    function rests(from, len) {
+      decompose(len).forEach(function (d) { ev.push({ type: 'rest', p: from, dur: d }); from += d; });
+    }
+    if (!ps.length) { ev.push({ type: 'rest', p: 0, dur: 4 }); return ev; }
+    if (ps[0] > 0) rests(0, ps[0]);
+    ps.forEach(function (p, i) {
+      var next = i + 1 < ps.length ? ps[i + 1] : 4;
+      var span = next - p;
+      var d = span >= 4 ? 4 : (span >= 2 ? 2 : 1);
+      ev.push({ type: 'note', p: p, dur: d, heads: byPos[p] });
+      if (span - d > 0) rests(p + d, span - d);
+    });
+    return ev;
+  }
+
+  function f1(n) { return Math.round(n * 10) / 10; }
+
+  function restSvg(dur, x, y) {
+    var a = 'fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"';
+    if (dur === 4) {
+      return '<path d="M' + f1(x - 2) + ' ' + f1(y - 9) + ' L' + f1(x + 3) + ' ' + f1(y - 3) + ' L' + f1(x - 2) + ' ' + f1(y + 2) +
+        ' L' + f1(x + 3) + ' ' + f1(y + 8) + ' C' + f1(x - 3) + ' ' + f1(y + 6) + ' ' + f1(x - 3) + ' ' + f1(y + 12) + ' ' + f1(x + 2) + ' ' + f1(y + 12) +
+        '" ' + a + ' stroke-width="1.8"/>';
+    }
+    var s = '<circle cx="' + f1(x - 2.5) + '" cy="' + f1(y - 3) + '" r="1.9" fill="currentColor"/>' +
+      '<path d="M' + f1(x - 2.5) + ' ' + f1(y - 3) + ' Q' + f1(x + 1) + ' ' + f1(y - 2) + ' ' + f1(x + 3) + ' ' + f1(y - 6) + ' L' + f1(x - (dur === 1 ? 3 : 2)) + ' ' + f1(y + (dur === 1 ? 10 : 7)) + '" ' + a + ' stroke-width="1.5"/>';
+    if (dur === 1) s += '<circle cx="' + f1(x - 4) + '" cy="' + f1(y + 2) + '" r="1.9" fill="currentColor"/>';
+    return s;
+  }
+
+  function headSvg(x, y, h) {
+    var L = LANE[h.lane], s = '';
+    if (L.ledger) s += '<line class="bl" x1="' + f1(x - 8) + '" x2="' + f1(x + 8) + '" y1="' + f1(y) + '" y2="' + f1(y) + '"/>';
+    if (L.x) {
+      s += '<path d="M' + f1(x - 4) + ' ' + f1(y - 4) + ' L' + f1(x + 4) + ' ' + f1(y + 4) + ' M' + f1(x + 4) + ' ' + f1(y - 4) + ' L' + f1(x - 4) + ' ' + f1(y + 4) +
+        '" fill="none" stroke="currentColor" stroke-width="1.7"/>';
+      if (h.kind === 'open') s += '<circle cx="' + f1(x) + '" cy="' + f1(y - 9) + '" r="2.8" fill="none" stroke="currentColor" stroke-width="1.3"/>';
+    } else {
+      s += '<ellipse cx="' + f1(x) + '" cy="' + f1(y) + '" rx="5.2" ry="3.7" transform="rotate(-20 ' + f1(x) + ' ' + f1(y) + ')" fill="currentColor"/>';
+    }
+    if (h.kind === 'ghost') {
+      s += '<path d="M' + f1(x - 9) + ' ' + f1(y - 5) + ' Q' + f1(x - 13) + ' ' + f1(y) + ' ' + f1(x - 9) + ' ' + f1(y + 5) + '" fill="none" stroke="currentColor" stroke-width="1.2"/>' +
+        '<path d="M' + f1(x + 9) + ' ' + f1(y - 5) + ' Q' + f1(x + 13) + ' ' + f1(y) + ' ' + f1(x + 9) + ' ' + f1(y + 5) + '" fill="none" stroke="currentColor" stroke-width="1.2"/>';
+    }
+    return s;
+  }
+
+  function renderStaff(pat, width) {
+    var bars = pat.bars, nB = bars.length;
+    var hasUp = false, hasDown = false, hasCR = false, hasStick = false, stickRows = 0, minGap = 16;
+    bars.forEach(function (b) {
+      var seen = {}, sp = {};
+      b.hits.forEach(function (h) {
+        if (h.stick) { hasStick = true; var spp = (sp[h.pos] = sp[h.pos] || {}); if (h.stick === 'B') { spp.R = 1; spp.L = 1; } else spp[h.stick] = 1; }
+        if (LANE[h.lane].voice === 'up') hasUp = true; else hasDown = true;
+        if (h.lane === 'CR') hasCR = true;
+        seen[h.pos] = 1;
+      });
+      Object.keys(sp).forEach(function (k) { stickRows = Math.max(stickRows, Object.keys(sp[k]).length); });
+      var arr = Object.keys(seen).map(Number).sort(function (a, c) { return a - c; });
+      for (var i = 1; i < arr.length; i++) minGap = Math.min(minGap, arr[i] - arr[i - 1]);
+    });
+    var anyTrip = false;
+    bars.forEach(function (b) { for (var tb = 0; tb < 4; tb++) if (tripOf(b, tb)) anyTrip = true; });
+    var left = 26, pad = 14;
+    var avail = Math.max(170, width - left - 4);
+    var minBar = Math.max(130, 28 + 176 / minGap);
+    var perRow = Math.max(1, Math.min(nB, Math.floor(avail / minBar)));
+    var barW = Math.min(avail / perRow, 340);
+    var uW = (barW - 2 * pad) / 16;
+    var topM = (hasUp ? (hasCR ? 50 : 46) : 16) + (anyTrip && hasUp ? 16 : 0);
+    var botM = (hasDown ? 58 : 26) + (hasStick ? 14 * stickRows + 2 : 0) + (anyTrip && hasDown ? 16 : 0);
+    var rowH = topM + 40 + botM;
+    var rows = Math.ceil(nB / perRow);
+    var W = Math.round(left + perRow * barW + 4), H = rows * rowH + 4;
+    var out = [];
+
+    function drawBar(bar, bx, yB) {
+      function X(pos) { return bx + pad + pos * uW; }
+      function Y(step) { return yB - step * 5; }
+
+      function drawRun(run, voice) {
+        var up = voice === 'up';
+        var beamY = up
+          ? Math.min.apply(null, run.map(function (n) { return n.top; })) - 30
+          : Math.max.apply(null, run.map(function (n) { return n.bot; })) + 30;
+        var sxs = run.map(function (n) { return up ? n.x + 5 : n.x - 5; });
+        run.forEach(function (n, i) {
+          out.push('<line x1="' + f1(sxs[i]) + '" x2="' + f1(sxs[i]) + '" y1="' + f1(up ? n.bot : n.top) + '" y2="' + f1(beamY) + '" stroke="currentColor" stroke-width="1.5"/>');
+        });
+        if (run.length > 1) {
+          out.push('<line x1="' + f1(sxs[0]) + '" x2="' + f1(sxs[sxs.length - 1]) + '" y1="' + f1(beamY) + '" y2="' + f1(beamY) + '" stroke="currentColor" stroke-width="3.6"/>');
+          var y2 = beamY + (up ? 5.5 : -5.5);
+          run.forEach(function (n, i) {
+            if (n.dur !== 1) return;
+            var next = run[i + 1], prev = run[i - 1];
+            if (next && next.dur === 1) {
+              out.push('<line x1="' + f1(sxs[i]) + '" x2="' + f1(sxs[i + 1]) + '" y1="' + f1(y2) + '" y2="' + f1(y2) + '" stroke="currentColor" stroke-width="3.2"/>');
+            } else if (!(prev && prev.dur === 1)) {
+              var dx = next ? 7 : -7;
+              out.push('<line x1="' + f1(sxs[i]) + '" x2="' + f1(sxs[i] + dx) + '" y1="' + f1(y2) + '" y2="' + f1(y2) + '" stroke="currentColor" stroke-width="3.2"/>');
+            }
+          });
+        } else {
+          var n0 = run[0], sx = sxs[0], flags = n0.dur === 2 ? 1 : (n0.dur === 1 ? 2 : 0);
+          for (var k = 0; k < flags; k++) {
+            var o = k * 5 * (up ? 1 : -1);
+            out.push(up
+              ? '<path d="M' + f1(sx) + ' ' + f1(beamY + o) + ' C' + f1(sx) + ' ' + f1(beamY + o + 6) + ' ' + f1(sx + 9) + ' ' + f1(beamY + o + 8) + ' ' + f1(sx + 7) + ' ' + f1(beamY + o + 18) + '" fill="none" stroke="currentColor" stroke-width="1.8"/>'
+              : '<path d="M' + f1(sx) + ' ' + f1(beamY + o) + ' C' + f1(sx) + ' ' + f1(beamY + o - 6) + ' ' + f1(sx + 9) + ' ' + f1(beamY + o - 8) + ' ' + f1(sx + 7) + ' ' + f1(beamY + o - 18) + '" fill="none" stroke="currentColor" stroke-width="1.8"/>');
+          }
+        }
+      }
+
+      ['up', 'down'].forEach(function (voice) {
+        if (voice === 'up' ? !hasUp : !hasDown) return;
+        for (var beat = 0; beat < 4; beat++) {
+          var run = [], tn = tripOf(bar, beat), tTop = 999, tBot = -999;
+          var evs = buildVoice(bar, voice, beat);
+          evs.forEach(function (e) {
+            var x = X(beat * 4 + e.p);
+            if (e.type === 'rest') {
+              if (run.length) { drawRun(run, voice); run = []; }
+              out.push(restSvg(e.dur, x, voice === 'up' ? yB - 30 : yB - 10));
+              return;
+            }
+            var heads = e.heads.slice().sort(function (a, b) { return LANE[a.lane].step - LANE[b.lane].step; });
+            var ys = heads.map(function (h) { return Y(LANE[h.lane].step); });
+            var n = { x: x, dur: e.dur, top: Math.min.apply(null, ys), bot: Math.max.apply(null, ys) };
+            tTop = Math.min(tTop, n.top); tBot = Math.max(tBot, n.bot);
+            heads.forEach(function (h, i) { out.push(headSvg(x, ys[i], h)); });
+            if (e.dur >= 4) {
+              if (run.length) { drawRun(run, voice); run = []; }
+              drawRun([n], voice);
+            } else {
+              run.push(n);
+            }
+          });
+          if (run.length) drawRun(run, voice);
+          if (tn && !evs.noBracket && tTop < 999) {
+            var up2 = voice === 'up', xa = X(beat * 4) - 5, xb = X(beat * 4 + 4 - 4 / tn) + 5;
+            var yb = up2 ? tTop - 38 : tBot + 38, dy = up2 ? 5 : -5;
+            out.push('<path d="M' + f1(xa) + ' ' + f1(yb + dy) + ' L' + f1(xa) + ' ' + f1(yb) + ' L' + f1(xb) + ' ' + f1(yb) + ' L' + f1(xb) + ' ' + f1(yb + dy) +
+              '" fill="none" stroke="currentColor" stroke-width="1"/>');
+            out.push('<text class="ct" x="' + f1((xa + xb) / 2) + '" y="' + f1(up2 ? yb - 3 : yb + 12) + '" text-anchor="middle" font-style="italic">3</text>');
+          }
+        }
+      });
+
+      var sy = yB + (hasDown ? 50 : 20) + (anyTrip && hasDown ? 16 : 0);
+      if (hasStick) {
+        var sp = {};
+        bar.hits.forEach(function (h) { if (h.stick) { var q = (sp[h.pos] = sp[h.pos] || {}); if (h.stick === 'B') { q.R = 1; q.L = 1; } else q[h.stick] = 1; } });
+        Object.keys(sp).forEach(function (k) {
+          ['R', 'L'].filter(function (c) { return sp[k][c]; }).forEach(function (c, i) {
+            out.push('<text class="st' + c + '" x="' + f1(X(Number(k))) + '" y="' + f1(sy + i * 14) + '" text-anchor="middle">' + c + '</text>');
+          });
+        });
+      }
+      var ly = sy + (hasStick ? 14 * stickRows + 2 : -2);
+      var trips = [0, 1, 2, 3].map(function (b) { return tripOf(bar, b); });
+      trips.forEach(function (tn2, b) {
+        if (!tn2) return;
+        var names2 = tn2 === 3 ? ['', 'tri', 'let'] : ['', 'la', 'li', 'ta', 'la', 'li'];
+        for (var sl = 1; sl < tn2; sl++) {
+          out.push('<text class="ct" x="' + f1(X(b * 4 + sl * 4 / tn2)) + '" y="' + f1(ly) + '" text-anchor="middle">' + names2[sl] + '</text>');
+        }
+      });
+      for (var pos = 0; pos < 16; pos++) {
+        var t = '', num = false;
+        if (trips[Math.floor(pos / 4)] && pos % 4 !== 0) continue;
+        if (pos % 4 === 0) { t = String(pos / 4 + 1); num = true; }
+        else if (bar.grid >= 16) t = pos % 4 === 1 ? 'e' : (pos % 4 === 2 ? '&' : 'a');
+        else if (bar.grid >= 8 && pos % 4 === 2) t = '&';
+        if (t) out.push('<text class="' + (num ? 'cn' : 'ct') + '" x="' + f1(X(pos)) + '" y="' + f1(ly) + '" text-anchor="middle">' + t + '</text>');
+      }
+    }
+
+    for (var r = 0; r < rows; r++) {
+      var rowTop = r * rowH + 2, yB = rowTop + topM + 40;
+      var inRow = Math.min(perRow, nB - r * perRow);
+      var xEnd = left + inRow * barW;
+      for (var k = 0; k < 5; k++) {
+        out.push('<line class="sl" x1="2" x2="' + f1(xEnd) + '" y1="' + (yB - k * 10) + '" y2="' + (yB - k * 10) + '"/>');
+      }
+      out.push('<rect x="8" y="' + (yB - 30) + '" width="3" height="20" fill="currentColor"/><rect x="14" y="' + (yB - 30) + '" width="3" height="20" fill="currentColor"/>');
+      for (var c = 0; c <= inRow; c++) {
+        var lx = f1(left + c * barW);
+        out.push('<line class="bl" x1="' + lx + '" x2="' + lx + '" y1="' + (yB - 40) + '" y2="' + yB + '"/>');
+      }
+      for (var bi = 0; bi < inRow; bi++) drawBar(bars[r * perRow + bi], left + bi * barW, yB);
+    }
+    return '<svg class="nt-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H +
+      '" role="img" aria-label="Drum notation, ' + nB + (nB === 1 ? ' bar' : ' bars') + '">' + out.join('') + '</svg>';
+  }
+  /* LOGIC END */
+
+  /* ---------- state and storage ---------- */
+  var LS = 'drumladder.v1';
+  var SAMPLE = 'Carmine groove p20 #1\nHH x-x-x-x-x-x-x-x-\nSD ----o-------o---\nBD o-------o-------';
+  var STICK_SAMPLE = 'Stick Control p5 #1 singles\nSD rlrlrlrl';
+
+  var HAND_SPEED = '# Hand speed, routine\n' +
+    'Counting sub-divisions 80 BPM 1 min: say the count out loud, one minute without a mistake\n'+
+    'SD oooo|oooooooo|oooooooooooo|oooooooooooooooo\n'+
+    'Single strokes on sub-divisions 80 BPM 1 min\n'+
+    'SD oooo|oooooooo|oooooooooooo|oooooooooooooooo\n'+
+    'Fulcrum 80 BPM 2 min: palm down, fulcrum between the last knuckle of the index finger and the thumb, back three fingers away from the stick. Strike the pad, 16th notes: R, L, both hands, then alternating\n'+
+    'SD rrrrrrrr|llllllll|r/lr/lr/lr/lr/lr/lr/lr/l|rlrlrlrlrlrlrlrl\n'+
+    'Wrist 80 BPM 2 min: No air between the back of the stick and your palm, seal the stick to the palm with the back three fingers. Keep the stick height consistent\n'+
+    'SD oooooooo|oooooooooooooooo\n'+
+    'Finger dribbling 2 min: Alternate by bar: thumb and index alone, then add middle, ring, pinky, then all fingers, repeat\n'+
+    'SD oooooooooooooooo\n'+
+    'Drop catch 3 min: 1 Grip reset. 2 Rotate the wrist so the palm faces down. 3 Raise the wrist and drop it, no arm, let the stick bounce, back three fingers away. 4 Make the first bounce more distinct. 5 Stop the stick with the back three fingers, back of the stick on the palm during the reset. 6 Drop the stick with the back three fingers on it, in slow motion. 7 Close the fingers to catch the stick\n'
+  var EXAMPLE = '# Stick Control, 10 min\n' + STICK_SAMPLE + '\n\n# Syncopation, 20 min\nSyncopation p5 #7\nSyncopation p5 #8\n\n# Carmine, 15 min\n' + SAMPLE;
+
+  function blank() { return { v: 1, weekText: EXAMPLE, edited: false, memory: {}, sessions: [], mask: [true, true, true, true], conf: sanitizeConf(null), templates: [] }; }
+  function normalize(d) {
+    var b = blank();
+    if (!d || typeof d !== 'object') return b;
+    var edited = !!d.edited;
+    return {
+      v: 1,
+      weekText: edited && typeof d.weekText === 'string' ? d.weekText : b.weekText,
+      edited: edited,
+      memory: (d.memory && typeof d.memory === 'object' && !Array.isArray(d.memory)) ? d.memory : {},
+      sessions: Array.isArray(d.sessions) ? d.sessions.slice(0, 100) : [],
+      mask: (Array.isArray(d.mask) && d.mask.length === 4) ? d.mask.map(Boolean) : b.mask,
+      conf: sanitizeConf(d.conf),
+      templates: (Array.isArray(d.templates) ? d.templates : []).filter(function (t) { return t && typeof t.name === 'string' && typeof t.text === 'string' && t.name.trim(); })
+        .slice(0, 30).map(function (t) { return { name: t.name.trim().slice(0, 40), text: t.text.slice(0, 8000) }; })
+    };
+  }
+
+  var state;
+  try { state = normalize(JSON.parse(localStorage.getItem(LS) || 'null')); } catch (e) { state = blank(); }
+  configure(state.conf);
+
+  function save() {
+    try { localStorage.setItem(LS, JSON.stringify(state)); } catch (e) { /* storage unavailable */ }
+  }
+
+  /* ---------- helpers ---------- */
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function mmss(ms) {
+    var t = Math.max(0, Math.ceil(ms / 1000));
+    return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+  }
+
+  function slipText(r) {
+    if (r.mistakes == null) return '';
+    var s = r.mistakes + (r.mistakes === 1 ? ' mistake' : ' mistakes');
+    if (r.mistakes && r.slips && r.slips.length) {
+      s += ' (' + r.slips.map(function (x) {
+        var code = /^\d[A-C]:/.test(x.label) ? x.label.slice(0, 2) : x.label;
+        return code + ' x' + x.n;
+      }).join(', ') + ')';
+    }
+    return s;
+  }
+
+  var NT = {};
+  function paintNotation() {
+    var els = document.querySelectorAll('.nt[data-nt]');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (el.offsetParent === null) continue;
+      var pat = NT[el.getAttribute('data-nt')];
+      if (!pat) { el.innerHTML = ''; continue; }
+      el.innerHTML = pat.error
+        ? '<div class="nt-err">' + esc(pat.error) + '</div>'
+        : renderStaff(pat, el.clientWidth || 340);
+    }
+  }
+  var rzTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(rzTimer);
+    rzTimer = setTimeout(paintNotation, 150);
+  });
+
+  /* ---------- metronome ---------- */
+  /* Beats are scheduled ahead on the audio clock. Each beat also reports itself to the page
+     (onBeat) so the rep counter moves with the click, even when the click is muted. */
+  var Click = {
+    ctx: null, timer: null, next: 0, beat: 0, bpm: 60, gen: 0, sub: 1, onBeat: null, audible: null,
+    now: function () { return this.ctx ? this.ctx.currentTime : performance.now() / 1000; },
+    start: function () {
+      var self = this;
+      if (!this.ctx) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) { try { this.ctx = new AC(); } catch (e) { this.ctx = null; } }
+      }
+      if (this.ctx && this.ctx.resume) this.ctx.resume();
+      clearInterval(this.timer);
+      this.gen++;
+      this.beat = 0;
+      this.next = this.now() + 0.1;
+      this.timer = setInterval(function () { self.tick(); }, 25);
+    },
+    stop: function () { clearInterval(this.timer); this.timer = null; this.gen++; },
+    tick: function () {
+      while (this.next < this.now() + 0.12) {
+        var idx = this.beat, when = this.next;
+        if (this.ctx && (!this.audible || this.audible(idx))) {
+          this.blip(when, idx % 4 === 0);
+          for (var k = 1; k < this.sub; k++) this.blip(when + k * 60 / this.bpm / this.sub, false, true);
+        }
+        if (this.onBeat) this.onBeat(idx, when, this.gen);
+        this.next += 60 / this.bpm;
+        this.beat++;
+      }
+    },
+    blip: function (t, accent, soft) {
+      var o = this.ctx.createOscillator(), g = this.ctx.createGain();
+      o.frequency.value = soft ? 520 : (accent ? 1100 : 760);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(soft ? 0.16 : (accent ? 0.5 : 0.32), t + 0.002);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+      o.connect(g);
+      g.connect(this.ctx.destination);
+      o.start(t);
+      o.stop(t + 0.06);
+    }
+  };
+
+  var wake = null;
+  async function holdWake() {
+    try { if (navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); } catch (e) { /* optional */ }
+  }
+  function dropWake() {
+    try { if (wake) wake.release(); } catch (e) { /* optional */ }
+    wake = null;
+  }
+
+  /* ---------- views ---------- */
+  var S = null;
+  var tab = 'week';
+  var sections = [];
+
+  Click.audible = function (idx) {
+    if (!S) return true;
+    if (S.type === 'routine') return !!(S.lines[S.active] && S.lines[S.active].tempo);
+    if (idx < S.ciEnd) return true;
+    return !!S.mask[idx % 4];
+  };
+  Click.onBeat = function (idx, when, gen) {
+    var ms = Math.max(0, (when - Click.now()) * 1000);
+    setTimeout(function () {
+      if (gen !== Click.gen || !S || !S.running || S.finished) return;
+      handleBeat(idx);
+    }, ms);
+  };
+
+  function setTab(name) {
+    tab = name;
+    ['week', 'practice', 'log', 'methods'].forEach(function (n) {
+      $('p-' + n).hidden = n !== name;
+      $('t-' + n).setAttribute('aria-selected', n === name ? 'true' : 'false');
+    });
+    if (name === 'week') renderWeek();
+    if (name === 'practice') renderPractice();
+    if (name === 'log') renderLog();
+    if (name === 'methods') renderMethods();
+  }
+
+  function renderWeek() {
+    sections = parseWeek($('weekText').value);
+    renderRules();
+    $('hintEx').hidden = state.edited;
+    NT = {};
+    if (!sections.length) {
+      $('secs').innerHTML = '<ul class="cards"><li class="empty">Add one exercise per line to begin.</li></ul>';
+      return;
+    }
+    $('secs').innerHTML = sections.map(function (sec, si) {
+      var T = TYPES[sec.type];
+      var items = sec.items.map(function (it, ii) {
+        var m = state.memory[it.key];
+        var st = startTempo(m && m.last != null ? m.last : null, sec.type);
+        var note = m && m.last != null ? 'Last ' + m.last + ', starts at ' + st + ' BPM' : 'New, starts at ' + st + ' BPM';
+        var rsp = sec.type === 'routine' ? splitItem(it.label) : null;
+        if (rsp) note = (rsp.tempo && m && m.start ? 'Last start ' + m.start + ', now ' : '') + itemMeta({ tempo: routineStart(rsp, m), secs: rsp.secs });
+        var id = 'w' + si + '_' + ii;
+        NT[id] = it.pattern;
+        if (rsp) return '<li><div class="top"><span class="name">' + esc(rsp.name) + '</span><span class="meta">' + note + '</span></div>' +
+          (rsp.detail ? '<div class="muted">' + esc(rsp.detail) + '</div>' : '') +
+          (it.pattern ? '<div class="nt" data-nt="' + id + '"></div>' : '') + '</li>';
+        return '<li><div class="top"><span class="name">' + esc(it.label) + '</span><span class="meta">' + note + '</span></div>' +
+          (it.pattern ? '<div class="nt" data-nt="' + id + '"></div>' : '') + '</li>';
+      }).join('');
+      return '<div class="sec"><div class="sec-head"><h2>' + esc(sec.name) + '</h2><span class="mins">' + sec.minutes + ' min, ' + T.label.toLowerCase() + '</span></div>' +
+        '<label class="pick"><input type="checkbox" data-pick="' + si + '"' + (skipSec[sec.name] ? '' : ' checked') + '> In today\'s session</label>' +
+        '<p class="sec-rule">' + esc(ruleText(sec.type)) + '</p>' +
+        '<ul class="cards">' + items + '</ul>' +
+        '<button class="btn big" data-start="' + si + '">Start only ' + esc(sec.name) + '</button></div>';
+    }).join('');
+    var picked = pickedSections();
+    $('secs').innerHTML = '<div class="plan"><p><strong>Today\'s session</strong><br><span class="muted" id="planTxt"></span></p>' +
+      '<button class="btn primary big" data-startall="1">Start session</button></div>' + $('secs').innerHTML;
+    updatePlan();
+    paintNotation();
+  }
+
+  var skipSec = {};
+  function pickedSections() { return sections.filter(function (x) { return !skipSec[x.name]; }); }
+  function updatePlan() {
+    var el = $('planTxt'), btn = document.querySelector('[data-startall]');
+    var ps = pickedSections();
+    var mins = ps.reduce(function (a, x) { return a + x.minutes; }, 0);
+    if (el) el.textContent = ps.length ? ps.map(function (x) { return x.name + ' ' + x.minutes + ' min'; }).join(', then ') + '. ' + mins + ' min in total.' : 'Tick at least one section below.';
+    if (btn) btn.disabled = !ps.length;
+  }
+
+  function curLine() { return S.lines[S.active]; }
+
+  function applyStepMask() {
+    var st = curStep(curLine());
+    if (st.mask) S.mask = st.mask.map(Boolean);
+  }
+
+  /* index of the next bar line at or after beat n (bars are 4 beats, aligned to the beat counter) */
+  function barAtOrAfter(n) { return n + ((4 - (n % 4)) % 4); }
+
+  function renderPractice() {
+    var box = $('practice');
+    if (!S) {
+      box.innerHTML = '<div class="empty-state"><p><strong>No session running.</strong></p>' +
+        '<p class="muted">Press Start session on the Week tab.</p>' +
+        '<button class="btn" data-go="week">Go to Week</button></div>';
+      return;
+    }
+    if (S.finished) { renderSummary(box); return; }
+    if (S.type === 'routine') { renderRoutine(box); return; }
+    var l = curLine(), st = curStep(l), T = TYPES[S.type];
+    Click.bpm = l.tempo; Click.sub = 1;
+    var ticks = '';
+    for (var i = 0; i < st.reps; i++) ticks += '<span class="tick"></span>';
+    var rows = S.lines.map(function (x, idx) {
+      var xs = curStep(x);
+      var meta = x.done ? 'Clean at ' + x.tempo + ' BPM'
+        : x.tempo + ' BPM, ' + (x.steps.length > 1 ? 'way ' + (x.step + 1) + '/' + x.steps.length + ', ' : '') + x.count + '/' + xs.reps;
+      return '<li class="' + (x.done ? 'done' : '') + '"><button data-line="' + idx + '"' +
+        (idx === S.active ? ' aria-current="true"' : '') + (x.done ? ' disabled' : '') + '>' +
+        '<span class="name">' + esc(x.label) + '</span><span class="meta">' + meta + '</span></button></li>';
+    }).join('');
+    var stepLabel = l.steps.length > 1
+      ? '<div class="stepl">' + 'Way ' + (l.step + 1) + ' of ' + l.steps.length + ': ' + esc(st.label) + '</div>' : '';
+    var chips = [0, 1, 2, 3].map(function (j) {
+      return '<button class="chip' + (S.mask[j] ? ' on' : '') + '" data-beat="' + j + '" aria-pressed="' + (S.mask[j] ? 'true' : 'false') +
+        '" aria-label="Click on beat ' + (j + 1) + '">' + (j + 1) + '</button>';
+    }).join('');
+    NT = { live: S.type === 'groove' ? applyWay(l.pattern, st.code) : l.pattern };
+    box.innerHTML =
+      (S.notice ? '<div class="notice">' + esc(S.notice) + '</div>' : '') +
+      '<div class="secname">' + esc(S.section) + '<span class="ty">' + esc(T.label) +
+      (S.total > 1 ? ', part ' + (S.done.length + 1) + ' of ' + S.total : '') + '</span></div>' +
+      '<div class="runbar"><div class="clock" id="clock">' + mmss(S.minutes * 60000 - S.elapsed) + '</div>' +
+      '<span>' + (S.queue && S.queue.length ? '<button class="btn small" data-act="next">Next: ' + esc(S.queue[0].name) + '</button> ' : '') +
+      '<button class="btn small" data-act="end">End session</button></span></div>' +
+      '<div class="now"><div class="label">' + esc(l.label) + '</div>' + stepLabel +
+      '<div class="tempo">' + l.tempo + '<span>BPM</span></div>' +
+      '<div class="ticks" id="ticks" aria-hidden="true">' + ticks + '</div>' +
+      '<div class="count" id="cnt" aria-live="polite"></div>' +
+      '<div class="beats" id="beats" aria-hidden="true"><span class="bd"></span><span class="bd"></span><span class="bd"></span><span class="bd"></span></div></div>' +
+      '<button class="btn primary big" data-act="toggle">' + (S.running ? 'Pause' : (S.started ? 'Resume' : 'Start')) + '</button>' +
+      '<div class="pair"><button class="btn" data-act="rep">+1 rep</button>' +
+      '<button class="btn danger" data-act="miss">Mistake, restart</button></div>' +
+      '<div class="clickbox"><div class="cl-h">Click on beats</div><div class="chips">' + chips + '</div>' +
+      '<div class="presets"><button class="btn small" data-preset="all">All</button>' +
+      '<button class="btn small" data-preset="no3">Mute 3</button>' +
+      '<button class="btn small" data-preset="no24">Mute 2 and 4</button>' +
+      '<button class="btn small" data-preset="only1">Only 1</button></div></div>' +
+      (l.pattern ? '<div class="nt" data-nt="live"></div>' : '') +
+      '<ul class="lines">' + rows + '</ul>';
+    paintNotation();
+    updateLive();
+  }
+
+  function renderRoutine(box) {
+    var l = curLine();
+    if (l.tempo) Click.bpm = l.tempo;
+    Click.sub = l.sub || 1;
+    NT = { live: l.pattern };
+    var subChips = [['1', 'Quarters'], ['2', '8ths'], ['3', 'Triplets'], ['4', '16ths']].map(function (x) {
+      return '<button class="btn small' + ((l.sub || 1) === Number(x[0]) ? ' primary' : '') + '" data-sub="' + x[0] + '">' + x[1] + '</button>';
+    }).join('');
+    var rows = S.lines.map(function (x, idx) {
+      return '<li class="' + (x.done ? 'done' : '') + '"><button data-line="' + idx + '"' + (idx === S.active ? ' aria-current="true"' : '') + '>' +
+        '<span class="name">' + esc(x.name) + '</span><span class="meta">' + (x.done ? 'Done' : itemMeta({ tempo: x.tempo, secs: x.secs })) + '</span></button></li>';
+    }).join('');
+    box.innerHTML =
+      (S.notice ? '<div class="notice">' + esc(S.notice) + '</div>' : '') +
+      '<div class="secname">' + esc(S.section) + '<span class="ty">Routine' + (S.total > 1 ? ', part ' + (S.done.length + 1) + ' of ' + S.total : '') + '</span></div>' +
+      '<div class="runbar"><div class="clock" id="clock">' + mmss(S.minutes * 60000 - S.elapsed) + '</div>' +
+      '<span>' + (S.queue && S.queue.length ? '<button class="btn small" data-act="next">Next: ' + esc(S.queue[0].name) + '</button> ' : '') +
+      '<button class="btn small" data-act="end">End session</button></span></div>' +
+      '<div class="now"><div class="label">' + esc(l.name) + '</div>' +
+      (l.tempo ? '<div class="rt-tempo" id="rtTempo">' + l.tempo + ' BPM</div>' : '') +
+      (l.secs ? '<div class="rt-tempo" id="itclock">' + mmss(l.secs * 1000 - l.spent) + '</div>' : '') +
+      (l.detail ? '<div class="rt-detail">' + esc(l.detail) + '</div>' : '') +
+      (l.pattern ? '<div class="nt" data-nt="live"></div>' : '') +
+      '<div class="beats" id="beats" aria-hidden="true"><span class="bd"></span><span class="bd"></span><span class="bd"></span><span class="bd"></span></div>' +
+      '<div class="count" id="cnt" aria-live="polite"></div></div>' +
+      (l.tempo ? '<div class="clickbox"><div class="cl-h">Subdivision click</div><div class="presets">' + subChips + '</div></div>' : '') +
+      '<button class="btn big" data-act="toggle">' + (S.running ? 'Pause' : (S.started ? 'Resume' : 'Start')) + '</button>' +
+      (l.tempo
+        ? '<div class="pair"><button class="btn danger" data-act="miss">Mistake, restart bars</button><button class="btn primary" data-act="done">Done, next</button></div>'
+        : '<button class="btn primary big" data-act="done" style="margin-top:10px">Done, next</button>') +
+      '<ul class="lines">' + rows + '</ul>';
+    paintNotation();
+    updateLive();
+  }
+
+  function updateLive() {
+    if (!S || S.finished) return;
+    if (S.type === 'routine') {
+      var rl = curLine(), rd = document.querySelectorAll('#beats .bd');
+      for (var q = 0; q < rd.length; q++) rd[q].className = 'bd' + (S.running && S.pos === q && rl.tempo ? (S.phase === 'play' ? ' on' : ' ci') : '');
+      if ($('rtTempo')) $('rtTempo').textContent = rl.tempo + ' BPM';
+      var rc = $('cnt'), left = S.lines.filter(function (x) { return !x.done; }).length + ' left.';
+      if (rc) rc.textContent = !rl.tempo ? left
+        : (!S.running ? (S.started ? 'Paused. ' : 'Press Start. A bar of count-in comes first. ')
+          : S.phase === 'countin' ? 'Count-in. '
+          : S.phase === 'wait' ? 'The ' + RAMP.bars + ' bars restart on the next bar. '
+          : 'Bar ' + (Math.floor(S.k / 4) % RAMP.bars + 1) + ' of ' + RAMP.bars + ', then ' + (rl.tempo + RAMP.bpm) + ' BPM. ') +
+          rl.mistakes + (rl.mistakes === 1 ? ' mistake. ' : ' mistakes. ') + left;
+      return;
+    }
+    var l = curLine(), st = curStep(l), rb = repBeats(l);
+    var pct = (S.running && S.phase === 'play') ? ((S.k % rb) + 1) / rb * 100 : null;
+    var ticks = document.querySelectorAll('#ticks .tick');
+    for (var i = 0; i < ticks.length; i++) {
+      var cur = i === l.count && pct != null;
+      ticks[i].className = 'tick' + (i < l.count ? ' on' : '') + (cur ? ' cur' : '') +
+        ((st.reps % 5 === 0 && i % 5 === 4 && i < st.reps - 1) ? ' g' : '');
+      if (cur) ticks[i].style.setProperty('--p', pct.toFixed(1) + '%'); else ticks[i].style.removeProperty('--p');
+    }
+    var dots = document.querySelectorAll('#beats .bd');
+    for (var j = 0; j < dots.length; j++) {
+      var on = S.running && S.pos === j;
+      dots[j].className = 'bd' + (on ? (S.phase === 'play' ? ' on' : ' ci') : '');
+    }
+    var cnt = $('cnt');
+    if (cnt) {
+      var base = l.count + ' of ' + st.reps + ' clean. Round ' + S.round + '.';
+      if (!S.running) cnt.textContent = S.started ? 'Paused. ' + base : 'Press Start. A bar of count-in comes first. ' + base;
+      else if (S.phase === 'countin') cnt.textContent = 'Count-in. ' + base;
+      else if (S.phase === 'wait') cnt.textContent = 'Counting restarts on the next bar. ' + base;
+      else cnt.textContent = base;
+    }
+  }
+
+  function handleBeat(idx) {
+    S.last = idx;
+    S.pos = idx % 4;
+    if (idx < S.ciEnd) S.phase = 'countin';
+    else if (idx < S.base) S.phase = 'wait';
+    else {
+      S.phase = 'play';
+      var k = idx - S.base;
+      if (S.type === 'routine') {
+        if (rampBeat(curLine(), k)) Click.bpm = curLine().tempo;
+      } else if (k > 0 && k % repBeats(curLine()) === 0) {
+        if (addRep(S, 1)) { advance(idx); return; }
+      }
+      S.k = k;
+    }
+    updateLive();
+  }
+
+  /* a step or line finished: new count-in, new tempo, new click mask if the step has one */
+  function advance(idx) {
+    S.ciEnd = S.base = idx + 4;
+    S.phase = 'countin';
+    S.k = 0;
+    applyStepMask();
+    renderPractice();
+  }
+
+  function restartCountIn() {
+    var nd = barAtOrAfter(S.last + 1);
+    S.ciEnd = S.base = nd + 4;
+    S.phase = S.running ? 'countin' : 'idle';
+    S.k = 0;
+  }
+
+  function renderSummary(box) {
+    var total = 0;
+    var body = S.done.map(function (p) {
+      total += p.seconds;
+      var rows = p.results.map(function (r) {
+        var plain = r.routine && !r.ramp;
+        var top = r.top != null ? r.top + ' BPM' : (plain ? (r.done ? 'Done' : 'Not done') : 'No clean run');
+        var detail = r.mistakes && r.slips && r.slips.length ? '<div class="muted">' + esc(slipText(r).replace(/^\d+ mistakes? /, '')) + '</div>' : '';
+        return '<tr><td>' + esc(r.label) + '</td><td>' + (plain ? '' : r.start) + '</td><td>' + top + '</td><td>' + (plain ? '' : r.mistakes + detail) + '</td></tr>';
+      }).join('');
+      return '<h3 class="parth">' + esc(p.section) + ' <span class="muted">' + Math.max(1, Math.round(p.seconds / 60)) + ' min</span></h3>' +
+        '<div class="table-scroll"><table class="res"><thead><tr><th>Exercise</th><th>Start</th><th>Highest clean</th><th>Mistakes</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody></table></div>';
+    }).join('');
+    box.innerHTML =
+      '<h2>' + (S.reason === 'time' ? 'Time is up' : (S.reason === 'done' ? 'Session complete' : 'Session ended')) + '</h2>' +
+      '<p class="muted">' + Math.max(1, Math.round(total / 60)) + ' min of practice.</p>' + body +
+      '<label class="lbl" for="note">What felt hardest? What did you hear on playback?</label>' +
+      '<textarea id="note" rows="3" spellcheck="true"></textarea>' +
+      '<div class="row2"><button class="btn primary" data-act="save">Save session</button>' +
+      '<button class="btn" data-act="discard">Discard</button></div>';
+  }
+
+  function renderLog() {
+    var keys = Object.keys(state.memory).sort();
+    var mem = keys.length ? '<ul class="mem">' + keys.map(function (k) {
+      var m = state.memory[k];
+      return '<li><div><div class="name">' + esc(m.label) + '</div><div class="meta">' +
+        (m.start ? 'Last start ' + m.start + ', highest clean ' + m.last + ', next start ' + (m.start + RAMP.next) + ' BPM'
+          : 'Last clean ' + m.last + ' BPM, next start ' + startTempo(m.last, m.type) + ' BPM') + '</div></div>' +
+        '<button class="btn small" data-forget="' + esc(k) + '">Forget</button></li>';
+    }).join('') + '</ul>' : '<p class="muted">Exercises you finish a clean run on appear here with their next starting tempo.</p>';
+
+    var sess = state.sessions.length ? state.sessions.map(function (s) {
+      var d = new Date(s.ts).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+      var total = 0, counted = false;
+      var lines = (s.results || []).map(function (r) {
+        if (r.routine && !r.ramp) return '<li>' + esc(r.label) + ': ' + (r.done ? 'done' : 'not done') + '</li>';
+        if (r.mistakes != null) { total += r.mistakes; counted = true; }
+        return '<li>' + esc(r.label) + ': ' + r.start + ' to ' + (r.top == null ? 'no clean run' : r.top + ' BPM') +
+          (r.mistakes != null ? '. ' + esc(slipText(r)) : '') + '</li>';
+      }).join('');
+      return '<article class="session"><div class="when">' + esc(d) + (s.section ? ' / ' + esc(s.section) : '') + ' <span class="muted">' +
+        Math.max(1, Math.round((s.seconds || 0) / 60)) + ' min' + (counted ? ', ' + total + (total === 1 ? ' mistake' : ' mistakes') : '') +
+        '</span></div><ul>' + lines + '</ul>' +
+        (s.note ? '<p class="note">' + esc(s.note) + '</p>' : '') + '</article>';
+    }).join('') : '<p class="muted">Finished sessions show up here.</p>';
+
+    $('log').innerHTML = '<h2>Tempo memory</h2>' + mem + '<h2>Sessions</h2>' + sess;
+  }
+
+  function renderRules() {
+    $('rulesDl').innerHTML =
+      '<dt>Ladder</dt><dd>Stick Control. ' + esc(ruleText('ladder')) + '</dd>' +
+      '<dt>Four-way</dt><dd>Syncopation. ' + esc(ruleText('fourway')) + '</dd>' +
+      '<dt>Groove</dt><dd>Carmine. ' + esc(ruleText('groove')) + '</dd>' +
+      '<dt>Routine</dt><dd>' + esc(ruleText('routine')) + '</dd>' +
+      '<dt>A mistake</dt><dd>restarts the count for that step.</dd>' +
+      '<dt>Next time</dt><dd>start ' + CFG.drop + ' BPM below your highest clean tempo, never below the starting tempo of that type.</dd>' +
+      '<dt>Change</dt><dd>any of this on the Methods tab.</dd>';
+  }
+
+  /* ---------- methods (settings) ---------- */
+  function numField(key, label, hint, val, min, max) {
+    var id = 'cf-' + key.replace('.', '-');
+    return '<div class="cf"><label class="lbl" for="' + id + '">' + esc(label) + '</label>' +
+      '<input id="' + id + '" type="number" inputmode="numeric" data-conf="' + key + '" min="' + min + '" max="' + max + '" value="' + val + '">' +
+      (hint ? '<div class="cf-h">' + esc(hint) + '</div>' : '') + '</div>';
+  }
+  function chk(type, i, label, on) {
+    return '<label class="chk"><input type="checkbox" data-way="' + type + ':' + i + '"' + (on ? ' checked' : '') + '><span>' + esc(label) + '</span></label>';
+  }
+  var resetArmed = false;
+
+  function renderMethods() {
+    var c = state.conf;
+    var fw = TYPES.fourway.steps.map(function (s, i) { return chk('fourway', i, s.label, c.fourway.ways[i]); }).join('');
+    var rows = HANDS.map(function (h, hi) {
+      return '<tr><th scope="row">' + (hi + 1) + '. ' + esc(h) + '</th>' + FEET.map(function (f, fi) {
+        var i = 1 + hi * 3 + fi;
+        return '<td><input type="checkbox" data-way="groove:' + i + '" aria-label="Way ' + (hi + 1) + 'ABC'.charAt(fi) + '"' + (c.groove.ways[i] ? ' checked' : '') + '></td>';
+      }).join('') + '</tr>';
+    }).join('');
+    $('methods').innerHTML =
+      '<p class="muted">The rules for each type of section. Changes apply to the next session you start.</p>' +
+      '<h2>Tempo</h2>' +
+      numField('step', 'Add after a clean round (BPM)', '', c.step, 1, 30) +
+      numField('drop', 'Start this far below your highest clean tempo (BPM)', 'Used when you come back to a line you have practised. Never goes below the starting tempo of that type.', c.drop, 0, 60) +
+      numField('minutes', 'Default minutes per section', 'Used when a heading has no minutes.', c.minutes, 1, 100 + 20) +
+      '<div class="mcard"><h2>Ladder<span>Stick Control</span></h2><p class="muted">' + esc(ruleText('ladder')) + '</p>' +
+      numField('ladder.floor', 'Starting tempo for new lines (BPM)', '', c.ladder.floor, 30, 300) +
+      numField('ladder.reps', 'Clean reps per line', '', c.ladder.reps, 1, 100) + '</div>' +
+      '<div class="mcard"><h2>Four-way<span>Syncopation</span></h2><p class="muted">' + esc(ruleText('fourway')) + '</p>' +
+      numField('fourway.floor', 'Starting tempo for new lines (BPM)', '', c.fourway.floor, 30, 300) +
+      numField('fourway.reps', 'Clean reps per way', '', c.fourway.reps, 1, 100) +
+      '<div class="lbl">Ways to play each exercise</div>' + fw + '</div>' +
+      '<div class="mcard"><h2>Groove<span>Carmine</span></h2><p class="muted">' + esc(ruleText('groove')) + '</p>' +
+      numField('groove.floor', 'Starting tempo for new lines (BPM)', '', c.groove.floor, 30, 300) +
+      numField('groove.reps', 'Clean bars per way', '', c.groove.reps, 1, 100) +
+      '<div class="lbl">Ways to play each exercise</div>' +
+      chk('groove', 0, 'As written', c.groove.ways[0]) +
+      '<div class="table-scroll"><table class="wt"><thead><tr><th>Hand pattern</th><th>A<br>quarters</th><th>B<br>eighths</th><th>C<br>&amp;</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<p class="cf-h">Columns are the hi-hat foot pattern.</p>' +
+      '<div class="mbtns"><button class="btn small" data-mact="groove-all">All ways</button>' +
+      '<button class="btn small" data-mact="groove-base">Only as written</button></div></div>' +
+      '<div class="mcard"><div class="mbtns"><button class="btn small danger" data-mact="reset">' + (resetArmed ? 'Press again to reset' : 'Reset to defaults') + '</button></div></div>';
+  }
+
+  function applyConf(c) {
+    state.conf = sanitizeConf(c);
+    configure(state.conf);
+    save();
+    renderMethods();
+    renderWeek();
+  }
+
+  $('methods').addEventListener('change', function (e) {
+    var t = e.target, c = JSON.parse(JSON.stringify(state.conf));
+    if (t.dataset.conf) {
+      var p = t.dataset.conf.split('.');
+      if (p.length === 1) c[p[0]] = t.value; else c[p[0]][p[1]] = t.value;
+    } else if (t.dataset.way) {
+      var q = t.dataset.way.split(':');
+      c[q[0]].ways[Number(q[1])] = t.checked;
+    } else return;
+    applyConf(c);
+  });
+
+  $('methods').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-mact]');
+    if (!b) return;
+    var a = b.dataset.mact, c = JSON.parse(JSON.stringify(state.conf));
+    if (a === 'groove-all') c.groove.ways = c.groove.ways.map(function () { return true; });
+    else if (a === 'groove-base') c.groove.ways = c.groove.ways.map(function (_, i) { return i === 0; });
+    else if (a === 'reset') {
+      if (!resetArmed) {
+        resetArmed = true;
+        renderMethods();
+        setTimeout(function () { resetArmed = false; if (tab === 'methods') renderMethods(); }, 3000);
+        return;
+      }
+      resetArmed = false;
+      c = sanitizeConf(null);
+    }
+    applyConf(c);
+  });
+
+  function renderAll() { renderWeek(); renderPractice(); renderLog(); renderMethods(); }
+
+  /* ---------- events ---------- */
+  document.querySelector('.tabs').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-tab]');
+    if (b) setTab(b.dataset.tab);
+  });
+
+  $('weekText').addEventListener('input', function () {
+    state.weekText = $('weekText').value;
+    state.edited = true;
+    renderWeek();
+    save();
+  });
+
+  function addSample(text) {
+    var ta = $('weekText');
+    ta.value = (ta.value.replace(/\s+$/, '') + '\n\n' + text).replace(/^\s+/, '');
+    ta.dispatchEvent(new Event('input'));
+  }
+  $('addEx').addEventListener('click', function () { addSample(SAMPLE); });
+  var BUILTIN_TPL = [{ name: 'Hand speed routine (built in)', text: HAND_SPEED, builtin: true }];
+  function allTpl() { return BUILTIN_TPL.concat(state.templates); }
+  function renderTpl(selName) {
+    var sel = $('tplSel'), all = allTpl();
+    sel.innerHTML = all.map(function (t, i) { return '<option value="' + i + '"' + (t.name === selName ? ' selected' : '') + '>' + esc(t.name) + '</option>'; }).join('');
+    $('tplDel').disabled = !!(all[Number(sel.value)] || {}).builtin;
+  }
+  $('tplSel').addEventListener('change', function () { renderTpl(allTpl()[Number($('tplSel').value)].name); });
+  $('tplAdd').addEventListener('click', function () { addSample(allTpl()[Number($('tplSel').value)].text); });
+  $('tplReplace').addEventListener('click', function () {
+    var ta = $('weekText'); ta.value = allTpl()[Number($('tplSel').value)].text; ta.dispatchEvent(new Event('input'));
+  });
+  $('tplDel').addEventListener('click', function () {
+    var i = Number($('tplSel').value) - BUILTIN_TPL.length;
+    if (i < 0) return;
+    state.templates.splice(i, 1); save(); renderTpl();
+  });
+  $('tplSave').addEventListener('click', function () {
+    var n = $('tplName').value.trim().slice(0, 40), txt = $('weekText').value.trim();
+    if (!n || !txt) { $('tplName').focus(); return; }
+    var hit = state.templates.filter(function (t) { return t.name === n; })[0];
+    if (hit) hit.text = txt.slice(0, 8000); else if (state.templates.length < 30) state.templates.push({ name: n, text: txt.slice(0, 8000) });
+    $('tplName').value = ''; save(); renderTpl(n);
+  });
+  renderTpl();
+  $('addStick').addEventListener('click', function () { addSample(STICK_SAMPLE); });
+
+  $('secs').addEventListener('change', function (e) {
+    var c = e.target.closest('[data-pick]');
+    if (!c) return;
+    var sec = sections[Number(c.dataset.pick)];
+    if (sec) skipSec[sec.name] = !c.checked;
+    updatePlan();
+  });
+
+  $('secs').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-start]');
+    var all = e.target.closest('[data-startall]');
+    if (!b && !all) return;
+    var list = all ? pickedSections() : [sections[Number(b.dataset.start)]];
+    if (!list.length || !list[0]) return;
+    var sec = list[0];
+    if (S && S.running) { Click.stop(); dropWake(); }
+    S = newSession(sec, state.memory);
+    S.queue = list.slice(1); S.done = []; S.total = list.length; S.notice = '';
+    S.mask = state.mask.map(Boolean);
+    S.started = false;
+    S.ciEnd = S.base = 4;
+    S.last = -1; S.pos = null; S.k = 0; S.phase = 'idle';
+    applyStepMask();
+    state.edited = true;
+    save();
+    setTab('practice');
+  });
+
+  $('practice').addEventListener('click', function (e) {
+    var go = e.target.closest('[data-go]');
+    if (go) { setTab(go.dataset.go); return; }
+    if (!S) return;
+
+    var beatBtn = e.target.closest('[data-beat]');
+    if (beatBtn && !S.finished) {
+      var j = Number(beatBtn.dataset.beat);
+      S.mask[j] = !S.mask[j];
+      state.mask = S.mask.map(Boolean);
+      save();
+      renderPractice();
+      return;
+    }
+    var pre = e.target.closest('[data-preset]');
+    if (pre && !S.finished) {
+      var P = { all: [1, 1, 1, 1], no3: [1, 1, 0, 1], no24: [1, 0, 1, 0], only1: [1, 0, 0, 0] };
+      S.mask = (P[pre.dataset.preset] || P.all).map(Boolean);
+      state.mask = S.mask.slice();
+      save();
+      renderPractice();
+      return;
+    }
+    var subBtn = e.target.closest('[data-sub]');
+    if (subBtn && !S.finished && S.type === 'routine') {
+      curLine().sub = Number(subBtn.dataset.sub);
+      Click.sub = curLine().sub;
+      renderPractice();
+      return;
+    }
+    var lineBtn = e.target.closest('[data-line]');
+    if (lineBtn && !S.finished) {
+      var i = Number(lineBtn.dataset.line);
+      if (!S.lines[i].done) {
+        S.active = i;
+        applyStepMask();
+        if (S.running) restartCountIn();
+      }
+      renderPractice();
+      return;
+    }
+    var b = e.target.closest('[data-act]');
+    if (!b) return;
+    var act = b.dataset.act;
+    if (S.finished) {
+      if (act === 'save') saveSession();
+      if (act === 'discard') { S = null; renderPractice(); setTab('week'); }
+      return;
+    }
+    if (act === 'toggle') {
+      if (S.running) {
+        S.running = false;
+        S.phase = 'idle';
+        S.pos = null;
+        Click.stop();
+        dropWake();
+      } else {
+        S.notice = '';
+        S.running = true;
+        S.started = true;
+        S.ciEnd = S.base = 4;
+        S.last = -1; S.pos = null; S.k = 0;
+        S.phase = 'countin';
+        Click.bpm = curLine().tempo || Click.bpm || 80;
+        Click.start();
+        holdWake();
+      }
+    } else if (act === 'done') {
+      routineDone();
+      return;
+    } else if (act === 'rep') {
+      if (addRep(S, 1)) {
+        applyStepMask();
+        if (S.running) restartCountIn();
+      }
+    } else if (act === 'miss') {
+      mistake(S);
+      if (S.running && S.phase !== 'countin') {
+        S.base = barAtOrAfter(S.last + 1);
+        S.phase = 'wait';
+        S.k = 0;
+      }
+    } else if (act === 'next') { nextPart('manual'); return;
+    } else if (act === 'end') { finishSession('manual'); return; }
+    renderPractice();
+  });
+
+  $('log').addEventListener('click', function (e) {
+    var f = e.target.closest('[data-forget]');
+    if (!f) return;
+    delete state.memory[f.dataset.forget];
+    save();
+    renderLog();
+    renderWeek();
+  });
+
+  function routineDone() {
+    var cl = curLine();
+    cl.done = true;
+    var nx = -1;
+    for (var q = 1; q <= S.lines.length; q++) { var qi = (S.active + q) % S.lines.length; if (!S.lines[qi].done) { nx = qi; break; } }
+    if (nx === -1) { if (S.queue && S.queue.length) nextPart('done'); else finishSession('done'); return; }
+    S.active = nx;
+    if (S.running) restartCountIn();
+    renderPractice();
+  }
+
+  function partDone() {
+    S.done.push({ section: S.section, type: S.type, seconds: Math.round(S.elapsed / 1000), results: results(S) });
+  }
+
+  function nextPart(reason) {
+    partDone();
+    Click.stop(); dropWake();
+    var prev = S.section, sec = S.queue.shift();
+    var n = newSession(sec, state.memory);
+    ['section', 'type', 'minutes', 'lines', 'active', 'round', 'elapsed'].forEach(function (k) { S[k] = n[k]; });
+    S.running = false; S.started = false; S.ciEnd = S.base = 4; S.last = -1; S.pos = null; S.k = 0; S.phase = 'idle';
+    S.notice = (reason === 'time' ? 'Time is up on ' : 'Done with ') + prev + '. Next: ' + sec.name + '. Press Start when ready.';
+    applyStepMask();
+    renderPractice();
+  }
+
+  function finishSession(reason) {
+    if (S.elapsed > 0 || !S.done.length) partDone();
+    S.finished = true;
+    S.running = false;
+    S.reason = reason;
+    Click.stop();
+    dropWake();
+    renderPractice();
+  }
+
+  function saveSession() {
+    var noteEl = $('note');
+    var note = noteEl ? noteEl.value.trim().slice(0, 500) : '';
+    var res = [], secs = 0;
+    S.done.forEach(function (p) { res = res.concat(p.results); secs += p.seconds; applyResults(state.memory, p.results, p.type); });
+    state.sessions.unshift({ ts: Date.now(), section: S.done.map(function (p) { return p.section; }).join(' + '),
+      type: S.done.length === 1 ? S.done[0].type : 'mixed', seconds: secs, results: res, note: note });
+    state.sessions = state.sessions.slice(0, 100);
+    S = null;
+    save();
+    renderAll();
+    setTab('log');
+  }
+
+  var tPrev = performance.now();
+  setInterval(function () {
+    var now = performance.now();
+    if (S && S.running && !S.finished) {
+      var dt = S.type === 'routine' && S.phase === 'countin' && curLine().tempo ? 0 : now - tPrev;
+      S.elapsed += dt;
+      if (S.type === 'routine') {
+        var rl = curLine();
+        rl.spent = (rl.spent || 0) + dt;
+        var ic = $('itclock');
+        if (ic && rl.secs) ic.textContent = mmss(rl.secs * 1000 - rl.spent);
+        if (rl.secs && rl.spent >= rl.secs * 1000) { routineDone(); tPrev = now; return; }
+      }
+      var clock = $('clock');
+      if (clock) clock.textContent = mmss(S.minutes * 60000 - S.elapsed);
+      if (S.elapsed >= S.minutes * 60000) { if (S.queue && S.queue.length) nextPart('time'); else finishSession('time'); }
+    }
+    tPrev = now;
+  }, 250);
+
+  /* ---------- start ---------- */
+  $('weekText').value = state.weekText;
+  renderAll();
+})();
+</script>
+
+</body></html>
