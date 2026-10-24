@@ -454,8 +454,7 @@ SD rlrlrlrl</pre>
     }
     if (type === 'groove') {
       n = c.ways.filter(Boolean).length;
-      return 'Each exercise through ' + n + (n === 1 ? ' way' : ' ways') + ' of the method (hand pattern x hi-hat foot pattern), ' + c.reps +
-        ' clean bars each. Every exercise clean: +' + s + ' BPM. New lines start at ' + c.floor + ' BPM.';
+      return 'Each exercise through ' + n + (n === 1 ? ' way' : ' ways') + ' of the method (hand pattern x hi-hat foot pattern). Stay on each way until it feels comfortable, then press Comfortable, next way. Every exercise done: +' + s + ' BPM. New lines start at ' + c.floor + ' BPM.';
     }
     return c.reps + ' clean reps on each line. Every line clean: +' + s + ' BPM and go round again. New lines start at ' + c.floor + ' BPM.';
   }
@@ -722,9 +721,16 @@ SD rlrlrlrl</pre>
   function addRep(s, n) {
     var l = s.lines[s.active];
     if (l.done) return null;
+    if (s.type === 'groove') { l.count += n; return null; }
     var st = curStep(l);
     l.count = Math.min(st.reps, l.count + n);
     if (l.count < st.reps) return null;
+    return nextStep(s);
+  }
+
+  /* Groove ways only move on through here, when the player says they are comfortable. */
+  function nextStep(s) {
+    var l = s.lines[s.active];
     l.count = 0;
     l.step++;
     if (l.step >= l.steps.length) { completeLine(s); return 'line'; }
@@ -1329,11 +1335,11 @@ SD rlrlrlrl</pre>
     var l = curLine(), st = curStep(l), T = TYPES[S.type];
     Click.bpm = l.tempo; Click.sub = 1;
     var ticks = '';
-    for (var i = 0; i < st.reps; i++) ticks += '<span class="tick"></span>';
+    if (S.type !== 'groove') for (var i = 0; i < st.reps; i++) ticks += '<span class="tick"></span>';
     var rows = S.lines.map(function (x, idx) {
       var xs = curStep(x);
       var meta = x.done ? 'Clean at ' + x.tempo + ' BPM'
-        : x.tempo + ' BPM, ' + (x.steps.length > 1 ? 'way ' + (x.step + 1) + '/' + x.steps.length + ', ' : '') + x.count + '/' + xs.reps;
+        : x.tempo + ' BPM' + (x.steps.length > 1 ? ', way ' + (x.step + 1) + '/' + x.steps.length : '') + (S.type === 'groove' ? '' : ', ' + x.count + '/' + xs.reps);
       return '<li class="' + (x.done ? 'done' : '') + '"><button data-line="' + idx + '"' +
         (idx === S.active ? ' aria-current="true"' : '') + (x.done ? ' disabled' : '') + '>' +
         '<span class="name">' + esc(x.label) + '</span><span class="meta">' + meta + '</span></button></li>';
@@ -1358,7 +1364,7 @@ SD rlrlrlrl</pre>
       '<div class="count" id="cnt" aria-live="polite"></div>' +
       '<div class="beats" id="beats" aria-hidden="true"><span class="bd"></span><span class="bd"></span><span class="bd"></span><span class="bd"></span></div></div>' +
       '<button class="btn primary big" data-act="toggle">' + (S.running ? 'Pause' : (S.started ? 'Resume' : 'Start')) + '</button>' +
-      '<div class="pair"><button class="btn" data-act="rep">+1 rep</button>' +
+      '<div class="pair">' + (S.type === 'groove' ? '<button class="btn" data-act="nextway">Comfortable, next way</button>' : '<button class="btn" data-act="rep">+1 rep</button>') +
       '<button class="btn danger" data-act="miss">Mistake, restart</button></div>' +
       '<div class="clickbox"><div class="cl-h">Click on beats</div><div class="chips">' + chips + '</div>' +
       '<div class="presets"><button class="btn small" data-preset="all">All</button>' +
@@ -1441,7 +1447,7 @@ SD rlrlrlrl</pre>
     }
     var cnt = $('cnt');
     if (cnt) {
-      var base = l.count + ' of ' + st.reps + ' clean. Round ' + S.round + '.';
+      var base = (S.type === 'groove' ? l.count + (l.count === 1 ? ' clean bar' : ' clean bars') + ' in a row.' : l.count + ' of ' + st.reps + ' clean.') + ' Round ' + S.round + '.';
       if (!S.running) cnt.textContent = S.started ? 'Paused. ' + base : 'Press Start. A bar of count-in comes first. ' + base;
       else if (S.phase === 'countin') cnt.textContent = 'Count-in. ' + base;
       else if (S.phase === 'wait') cnt.textContent = 'Counting restarts on the next bar. ' + base;
@@ -1581,7 +1587,6 @@ SD rlrlrlrl</pre>
       '<div class="lbl">Ways to play each exercise</div>' + fw + '</div>' +
       '<div class="mcard"><h2>Groove<span>Carmine</span></h2><p class="muted">' + esc(ruleText('groove')) + '</p>' +
       numField('groove.floor', 'Starting tempo for new lines (BPM)', '', c.groove.floor, 30, 300) +
-      numField('groove.reps', 'Clean bars per way', '', c.groove.reps, 1, 100) +
       '<div class="lbl">Ways to play each exercise</div>' +
       chk('groove', 0, 'As written', c.groove.ways[0]) +
       '<div class="table-scroll"><table class="wt"><thead><tr><th>Hand pattern</th><th>A<br>quarters</th><th>B<br>eighths</th><th>C<br>&amp;</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
@@ -1823,6 +1828,11 @@ SD rlrlrlrl</pre>
         applyStepMask();
         if (S.running) restartCountIn();
       }
+    } else if (act === 'nextway') {
+      nextStep(S);
+      if (S.overtime) { if (S.queue && S.queue.length) nextPart('time'); else finishSession('time'); return; }
+      applyStepMask();
+      if (S.running) restartCountIn();
     } else if (act === 'miss') {
       mistake(S);
       if (S.running && S.phase !== 'countin') {
@@ -1910,8 +1920,12 @@ SD rlrlrlrl</pre>
       var clock = $('clock');
       if (clock) clock.textContent = mmss(S.minutes * 60000 - S.elapsed);
       if (S.elapsed >= S.minutes * 60000) {
-        if (S.type !== 'routine' && curLine().count > 0) {
-          if (!S.overtime) { S.overtime = true; S.notice = 'Time is up. Finish this run, it ends when the run is done or broken.'; renderPractice(); }
+        if (S.type === 'groove' || (S.type !== 'routine' && curLine().count > 0)) {
+          if (!S.overtime) {
+            S.overtime = true;
+            S.notice = S.type === 'groove' ? 'Time is up. Press Comfortable when you are done with this way.' : 'Time is up. Finish this run, it ends when the run is done or broken.';
+            renderPractice();
+          }
         } else if (S.queue && S.queue.length) nextPart('time');
         else finishSession('time');
       }
