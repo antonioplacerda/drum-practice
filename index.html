@@ -1865,7 +1865,7 @@ SD rlrlrlrl</pre>
     var prev = S.section, sec = S.queue.shift();
     var n = newSession(sec, state.memory);
     ['section', 'type', 'minutes', 'lines', 'active', 'round', 'elapsed'].forEach(function (k) { S[k] = n[k]; });
-    S.running = false; S.started = false; S.ciEnd = S.base = 4; S.last = -1; S.pos = null; S.k = 0; S.phase = 'idle';
+    S.running = false; S.started = false; S.overtime = false; S.ciEnd = S.base = 4; S.last = -1; S.pos = null; S.k = 0; S.phase = 'idle';
     S.notice = (reason === 'time' ? 'Time is up on ' : 'Done with ') + prev + '. Next: ' + sec.name + '. Press Start when ready.';
     applyStepMask();
     renderPractice();
@@ -1909,7 +1909,12 @@ SD rlrlrlrl</pre>
       }
       var clock = $('clock');
       if (clock) clock.textContent = mmss(S.minutes * 60000 - S.elapsed);
-      if (S.elapsed >= S.minutes * 60000) { if (S.queue && S.queue.length) nextPart('time'); else finishSession('time'); }
+      if (S.elapsed >= S.minutes * 60000) {
+        if (S.type !== 'routine' && curLine().count > 0) {
+          if (!S.overtime) { S.overtime = true; S.notice = 'Time is up. Finish this run, it ends when the run is done or broken.'; renderPractice(); }
+        } else if (S.queue && S.queue.length) nextPart('time');
+        else finishSession('time');
+      }
     }
     tPrev = now;
   }, 250);
