@@ -234,6 +234,8 @@ textarea {
 }
 .chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.bpmadj { margin: 4px 0 6px; }
+.bpmadj .btn { flex: 1; font-variant-numeric: tabular-nums; }
 .lines { list-style: none; margin: 18px 0 0; padding: 0; border-top: 1px solid var(--line); }
 .lines li { border-bottom: 1px solid var(--line); }
 .lines button {
@@ -1351,7 +1353,7 @@ SD rlrlrlrl</pre>
       '<span>' + (S.queue && S.queue.length ? '<button class="btn small" data-act="next">Next: ' + esc(S.queue[0].name) + '</button> ' : '') +
       '<button class="btn small" data-act="end">End session</button></span></div>' +
       '<div class="now"><div class="label">' + esc(l.label) + '</div>' + stepLabel +
-      '<div class="tempo">' + l.tempo + '<span>BPM</span></div>' +
+      '<div class="tempo">' + l.tempo + '<span>BPM</span></div>' + BPM_ADJ +
       '<div class="ticks" id="ticks" aria-hidden="true">' + ticks + '</div>' +
       '<div class="count" id="cnt" aria-live="polite"></div>' +
       '<div class="beats" id="beats" aria-hidden="true"><span class="bd"></span><span class="bd"></span><span class="bd"></span><span class="bd"></span></div></div>' +
@@ -1368,6 +1370,10 @@ SD rlrlrlrl</pre>
     paintNotation();
     updateLive();
   }
+
+  var BPM_ADJ = '<div class="presets bpmadj">' + [-5, -1, 1, 5].map(function (d) {
+    return '<button class="btn small" data-bpm="' + d + '" aria-label="' + (d > 0 ? 'Faster by ' : 'Slower by ') + Math.abs(d) + ' BPM">' + (d > 0 ? '+' : '\u2212') + Math.abs(d) + '</button>';
+  }).join('') + '</div>';
 
   function renderRoutine(box) {
     var l = curLine();
@@ -1388,7 +1394,7 @@ SD rlrlrlrl</pre>
       '<span>' + (S.queue && S.queue.length ? '<button class="btn small" data-act="next">Next: ' + esc(S.queue[0].name) + '</button> ' : '') +
       '<button class="btn small" data-act="end">End session</button></span></div>' +
       '<div class="now"><div class="label">' + esc(l.name) + '</div>' +
-      (l.tempo ? '<div class="rt-tempo" id="rtTempo">' + l.tempo + ' BPM</div>' : '') +
+      (l.tempo ? '<div class="rt-tempo" id="rtTempo">' + l.tempo + ' BPM</div>' + BPM_ADJ : '') +
       (l.secs ? '<div class="rt-tempo" id="itclock">' + mmss(l.secs * 1000 - l.spent) + '</div>' : '') +
       (l.detail ? '<div class="rt-detail">' + esc(l.detail) + '</div>' : '') +
       (l.pattern ? '<div class="nt" data-nt="live"></div>' : '') +
@@ -1772,6 +1778,14 @@ SD rlrlrlrl</pre>
         applyStepMask();
         if (S.running) restartCountIn();
       }
+      renderPractice();
+      return;
+    }
+    var bb = e.target.closest('[data-bpm]');
+    if (bb) {
+      var bl = curLine();
+      bl.tempo = bl.start = clampInt(bl.tempo + Number(bb.dataset.bpm), 30, 300, bl.tempo);
+      Click.bpm = bl.tempo;
       renderPractice();
       return;
     }
