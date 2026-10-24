@@ -378,7 +378,10 @@ SD rlrlrlrl</pre>
     <div id="methods"></div>
   </section>
 
-  <p class="foot">Saved in this browser only.</p>
+  <p class="foot">Saved in this browser only. Export a file to back up or move to another device. Importing takes the plan and settings from the file and adds its sessions, templates and tempos to the ones here.</p>
+  <div class="ex"><button class="btn small" id="exportBtn" type="button">Export data</button>
+    <button class="btn small" id="importBtn" type="button">Import data</button>
+    <input id="importFile" type="file" accept=".json,application/json" hidden></div>
 </div>
 
 <script>
@@ -1092,6 +1095,28 @@ SD rlrlrlrl</pre>
     };
   }
 
+  // Both arguments must be normalized. The plan and settings come from the file; history is combined.
+  function mergeData(local, file) {
+    var seen = {}, sessions = file.sessions.concat(local.sessions).filter(function (s) {
+      var id = s.ts + '|' + s.section;
+      return seen[id] ? false : (seen[id] = true);
+    }).sort(function (x, y) { return y.ts - x.ts; });
+    // ponytail: no per-entry timestamps, so the higher tempo wins; a tempo deliberately lowered on one device comes back from the other.
+    var memory = {};
+    Object.keys(local.memory).forEach(function (k) { memory[k] = local.memory[k]; });
+    Object.keys(file.memory).forEach(function (k) {
+      var a = memory[k], b = file.memory[k], f = b.type === 'routine' ? 'start' : 'last';
+      if (!a || (b[f] || 0) > (a[f] || 0)) memory[k] = b;
+    });
+    var names = {};
+    file.templates.forEach(function (t) { names[t.name] = true; });
+    return {
+      v: 1, weekText: file.weekText, edited: file.edited, mask: file.mask, conf: file.conf,
+      memory: memory, sessions: sessions,
+      templates: file.templates.concat(local.templates.filter(function (t) { return !names[t.name]; }))
+    };
+  }
+
   var state;
   try { state = normalize(JSON.parse(localStorage.getItem(LS) || 'null')); } catch (e) { state = blank(); }
   configure(state.conf);
@@ -1646,6 +1671,40 @@ SD rlrlrlrl</pre>
   });
   renderTpl();
   $('addStick').addEventListener('click', function () { addSample(STICK_SAMPLE); });
+
+  $('exportBtn').addEventListener('click', function () {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(state, null, 1)], { type: 'application/json' }));
+    a.download = 'drum-ladder-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  });
+  $('importBtn').addEventListener('click', function () {
+    if (S) { alert('Finish or end the current session before importing.'); return; }
+    $('importFile').click();
+  });
+  $('importFile').addEventListener('change', function () {
+    var f = this.files[0];
+    this.value = '';
+    if (!f) return;
+    f.text().then(function (txt) {
+      var d;
+      try {
+        d = JSON.parse(txt, function (k, v) {
+          if (/^(start|last|top|mistakes|seconds|ts|n)$/.test(k) && v != null && typeof v !== 'number') throw k;
+          return v;
+        });
+      } catch (e) { d = null; }
+      if (!d || d.v !== 1) { alert('That file is not a Drum Ladder export.'); return; }
+      if (!confirm('Import ' + f.name + '? Its plan and settings replace the ones here. Sessions, templates and tempos are combined, nothing is deleted.')) return;
+      state = mergeData(state, normalize(d));
+      configure(state.conf);
+      save();
+      $('weekText').value = state.weekText;
+      renderTpl();
+      renderAll();
+    });
+  });
 
   $('secs').addEventListener('change', function (e) {
     var c = e.target.closest('[data-pick]');
