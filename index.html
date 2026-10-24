@@ -1084,11 +1084,11 @@ SD rlrlrlrl</pre>
       weekText: edited && typeof d.weekText === 'string' ? d.weekText : b.weekText,
       edited: edited,
       memory: (d.memory && typeof d.memory === 'object' && !Array.isArray(d.memory)) ? d.memory : {},
-      sessions: Array.isArray(d.sessions) ? d.sessions.slice(0, 100) : [],
+      sessions: Array.isArray(d.sessions) ? d.sessions : [],
       mask: (Array.isArray(d.mask) && d.mask.length === 4) ? d.mask.map(Boolean) : b.mask,
       conf: sanitizeConf(d.conf),
       templates: (Array.isArray(d.templates) ? d.templates : []).filter(function (t) { return t && typeof t.name === 'string' && typeof t.text === 'string' && t.name.trim(); })
-        .slice(0, 30).map(function (t) { return { name: t.name.trim().slice(0, 40), text: t.text.slice(0, 8000) }; })
+        .map(function (t) { return { name: t.name.trim().slice(0, 40), text: t.text.slice(0, 8000) }; })
     };
   }
 
@@ -1096,8 +1096,11 @@ SD rlrlrlrl</pre>
   try { state = normalize(JSON.parse(localStorage.getItem(LS) || 'null')); } catch (e) { state = blank(); }
   configure(state.conf);
 
+  // ponytail: sessions and templates are uncapped, so localStorage (~5 MB, a few thousand sessions) is the ceiling; external sync is the upgrade path.
+  var saveWarned = false;
   function save() {
-    try { localStorage.setItem(LS, JSON.stringify(state)); } catch (e) { /* storage unavailable */ }
+    try { localStorage.setItem(LS, JSON.stringify(state)); }
+    catch (e) { if (!saveWarned) { saveWarned = true; alert('Could not save: browser storage is full or unavailable. Recent changes will be lost when this page closes.'); } }
   }
 
   /* ---------- helpers ---------- */
@@ -1638,7 +1641,7 @@ SD rlrlrlrl</pre>
     var n = $('tplName').value.trim().slice(0, 40), txt = $('weekText').value.trim();
     if (!n || !txt) { $('tplName').focus(); return; }
     var hit = state.templates.filter(function (t) { return t.name === n; })[0];
-    if (hit) hit.text = txt.slice(0, 8000); else if (state.templates.length < 30) state.templates.push({ name: n, text: txt.slice(0, 8000) });
+    if (hit) hit.text = txt.slice(0, 8000); else state.templates.push({ name: n, text: txt.slice(0, 8000) });
     $('tplName').value = ''; save(); renderTpl(n);
   });
   renderTpl();
@@ -1812,7 +1815,6 @@ SD rlrlrlrl</pre>
     S.done.forEach(function (p) { res = res.concat(p.results); secs += p.seconds; applyResults(state.memory, p.results, p.type); });
     state.sessions.unshift({ ts: Date.now(), section: S.done.map(function (p) { return p.section; }).join(' + '),
       type: S.done.length === 1 ? S.done[0].type : 'mixed', seconds: secs, results: res, note: note });
-    state.sessions = state.sessions.slice(0, 100);
     S = null;
     save();
     renderAll();
