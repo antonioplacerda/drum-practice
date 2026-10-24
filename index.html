@@ -456,7 +456,7 @@ SD rlrlrlrl</pre>
       n = c.ways.filter(Boolean).length;
       return 'Each exercise through ' + n + (n === 1 ? ' way' : ' ways') + ' of the method (hand pattern x hi-hat foot pattern). Stay on each way until it feels comfortable, then press Comfortable, next way. Every exercise done: +' + s + ' BPM. New lines start at ' + c.floor + ' BPM.';
     }
-    return c.reps + ' clean reps on each line. Every line clean: +' + s + ' BPM and go round again. New lines start at ' + c.floor + ' BPM.';
+    return c.reps + ' clean reps on each line. The click thins out every 5 reps: all beats, then beat 3 muted, then 2 and 4 muted, then only beat 1. A mistake brings all beats back. Every line clean: +' + s + ' BPM and go round again. New lines start at ' + c.floor + ' BPM.';
   }
 
   /* "18 ways to use this book": as written, then 6 hand patterns x 3 hi-hat foot patterns */
@@ -1314,6 +1314,17 @@ SD rlrlrlrl</pre>
 
   function curLine() { return S.lines[S.active]; }
 
+  /* Ladder click thins out every 5 clean reps. Only changes the mask when the group changes, so chip edits last until the next group. */
+  var LADDER_MASKS = [[1, 1, 1, 1], [1, 1, 0, 1], [1, 0, 1, 0], [1, 0, 0, 0]];
+  function ladderMask() {
+    if (S.type !== 'ladder') return false;
+    var g = Math.min(LADDER_MASKS.length - 1, Math.floor(curLine().count / 5));
+    if (g === S.mgroup) return false;
+    S.mgroup = g;
+    S.mask = LADDER_MASKS[g].map(Boolean);
+    return true;
+  }
+
   function applyStepMask() {
     var st = curStep(curLine());
     if (st.mask) S.mask = st.mask.map(Boolean);
@@ -1334,6 +1345,7 @@ SD rlrlrlrl</pre>
     if (S.type === 'routine') { renderRoutine(box); return; }
     var l = curLine(), st = curStep(l), T = TYPES[S.type];
     Click.bpm = l.tempo; Click.sub = 1;
+    ladderMask();
     var ticks = '';
     if (S.type !== 'groove') for (var i = 0; i < st.reps; i++) ticks += '<span class="tick"></span>';
     var rows = S.lines.map(function (x, idx) {
@@ -1469,6 +1481,7 @@ SD rlrlrlrl</pre>
         if (addRep(S, 1)) { advance(idx); return; }
       }
       S.k = k;
+      if (ladderMask()) { renderPractice(); return; }
     }
     updateLive();
   }
@@ -1875,6 +1888,7 @@ SD rlrlrlrl</pre>
     var prev = S.section, sec = S.queue.shift();
     var n = newSession(sec, state.memory);
     ['section', 'type', 'minutes', 'lines', 'active', 'round', 'elapsed'].forEach(function (k) { S[k] = n[k]; });
+    S.mask = state.mask.map(Boolean); S.mgroup = null;
     S.running = false; S.started = false; S.overtime = false; S.ciEnd = S.base = 4; S.last = -1; S.pos = null; S.k = 0; S.phase = 'idle';
     S.notice = (reason === 'time' ? 'Time is up on ' : 'Done with ') + prev + '. Next: ' + sec.name + '. Press Start when ready.';
     applyStepMask();
