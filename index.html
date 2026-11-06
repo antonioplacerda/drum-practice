@@ -643,7 +643,8 @@ SD rlrlrlrl</pre>
     var bm = /(\d{2,3})\s*bpm/i.exec(name), tm = /(\d{1,3})\s*(min\w*|sec\w*|s)\b/i.exec(name);
     var secs = tm ? parseInt(tm[1], 10) * (/^m/i.test(tm[2]) ? 60 : 1) : 0;
     var clean = name.replace(bm ? bm[0] : '', '').replace(tm ? tm[0] : '', '').replace(/[\s,;]+/g, ' ').replace(/[\s,;]+$/, '').trim();
-    var sub = /triplet/i.test(name) ? 3 : (/16th|sixteenth/i.test(name) ? 4 : (/8th|eighth/i.test(name) ? 2 : 1));
+    /* 0: no subdivision named, the click follows the notes (or plays quarters when there are none) */
+    var sub = /triplet/i.test(name) ? 3 : (/16th|sixteenth/i.test(name) ? 4 : (/8th|eighth/i.test(name) ? 2 : 0));
     return { name: clean || name, detail: detail, tempo: bm ? parseInt(bm[1], 10) : 0, secs: secs, sub: sub };
   }
   function itemMeta(sp) {
@@ -681,7 +682,7 @@ SD rlrlrlrl</pre>
         if (type === 'routine') {
           var sp = splitItem(it.label), t0 = routineStart(sp, m);
           return { label: it.label, name: sp.name, detail: sp.detail, key: it.key, pattern: it.pattern || null, steps: buildSteps('ladder'),
-            step: 0, start: t0, tempo: t0, secs: sp.secs, sub: sp.sub, spent: 0, count: 0, done: false, top: null, mistakes: 0, slips: {} };
+            step: 0, start: t0, tempo: t0, secs: sp.secs, sub: sp.sub || (it.pattern && it.pattern.bars ? 0 : 1), spent: 0, count: 0, done: false, top: null, mistakes: 0, slips: {} };
         }
         return {
           label: it.label, key: it.key, pattern: it.pattern || null,
@@ -1237,10 +1238,10 @@ SD rlrlrlrl</pre>
     },
     tick: function () {
       while (this.next < this.now() + 0.12) {
-        var idx = this.beat, when = this.next;
+        var idx = this.beat, when = this.next, sub = (this.subFor && this.subFor(idx)) || this.sub;
         if (this.ctx && (!this.audible || this.audible(idx))) {
           this.blip(when, idx % 4 === 0);
-          for (var k = 1; k < this.sub; k++) this.blip(when + k * 60 / this.bpm / this.sub, false, true);
+          for (var k = 1; k < sub; k++) this.blip(when + k * 60 / this.bpm / sub, false, true);
         }
         if (this.onBeat) this.onBeat(idx, when, this.gen);
         this.next += 60 / this.bpm;
@@ -1283,6 +1284,16 @@ SD rlrlrlrl</pre>
     }
     if (idx < S.ciEnd) return true;
     return !!S.mask[idx % 4];
+  };
+  /* a routine item set to follow the notes clicks each beat's subdivision: the bar's grid, or 3/6 on a triplet beat.
+     Bars count from the start of the clean run; the count-in and the wait after a mistake use the first bar. */
+  Click.subFor = function (idx) {
+    if (!S || S.type !== 'routine') return 0;
+    var l = S.lines[S.active];
+    if (!l || l.sub || !l.pattern || !l.pattern.bars) return 0;
+    var bars = l.pattern.bars, k = Math.max(0, idx - S.base);
+    var bar = bars[Math.floor(k / 4) % bars.length];
+    return tripOf(bar, k % 4) || Math.max(1, bar.grid / 4);
   };
   Click.onBeat = function (idx, when, gen) {
     var ms = Math.max(0, (when - Click.now()) * 1000);
@@ -1434,9 +1445,11 @@ SD rlrlrlrl</pre>
     return '<button class="btn small" data-bpm="' + d + '" aria-label="' + (d > 0 ? 'Faster by ' : 'Slower by ') + Math.abs(d) + ' BPM">' + (d > 0 ? '+' : '\u2212') + Math.abs(d) + '</button>';
   }).join('') + '</div>';
 
-  function subChips(cur) {
-    return '<div class="presets">' + [['1', 'Quarters'], ['2', '8ths'], ['3', 'Triplets'], ['4', '16ths']].map(function (x) {
-      var on = (cur || 1) === Number(x[0]);
+  function subChips(cur, follow) {
+    var opts = [['1', 'Quarters'], ['2', '8ths'], ['3', 'Triplets'], ['4', '16ths']];
+    if (follow) opts.unshift(['0', 'Follow notes']);
+    return '<div class="presets">' + opts.map(function (x) {
+      var on = cur === Number(x[0]);
       return '<button class="btn small' + (on ? ' primary' : '') + '" data-sub="' + x[0] + '" aria-pressed="' + on + '">' + x[1] + '</button>';
     }).join('') + '</div>';
   }
@@ -1463,7 +1476,7 @@ SD rlrlrlrl</pre>
       (l.pattern ? '<div class="nt" data-nt="live"></div>' : '') +
       '<div class="beats" id="beats" aria-hidden="true"><span class="bd"></span><span class="bd"></span><span class="bd"></span><span class="bd"></span></div>' +
       '<div class="count" id="cnt" aria-live="polite"></div></div>' +
-      (l.tempo ? '<div class="clickbox"><div class="cl-h">Subdivision click</div>' + subChips(l.sub) + '</div>' : '') +
+      (l.tempo ? '<div class="clickbox"><div class="cl-h">Subdivision click</div>' + subChips(l.sub, !!(l.pattern && l.pattern.bars)) + '</div>' : '') +
       '<button class="btn big" data-act="toggle">' + (S.running ? 'Pause' : (S.started ? 'Resume' : 'Start')) + '</button>' +
       (l.tempo
         ? '<div class="pair"><button class="btn danger" data-act="miss">Mistake, restart bars</button><button class="btn primary" data-act="done">Done, next</button></div>'
@@ -1850,7 +1863,7 @@ SD rlrlrlrl</pre>
       var sv = Number(subBtn.dataset.sub);
       if (S.type === 'routine') curLine().sub = sv;
       else { state.sub = sv; save(); }
-      Click.sub = sv;
+      Click.sub = sv || 1;
       renderPractice();
       return;
     }
