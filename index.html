@@ -1113,7 +1113,7 @@ SD rlrlrlrl</pre>
     'BD o-----oo--oo----\n';
   var EXAMPLE = '# Stick Control, 10 min\n' + STICK_SAMPLE + '\n\n# Syncopation, 20 min\nSyncopation p5 #7\nSyncopation p5 #8\n\n# Carmine, 15 min\n' + SAMPLE;
 
-  function blank() { return { v: 1, weekText: EXAMPLE, edited: false, memory: {}, sessions: [], mask: [true, true, true, true], conf: sanitizeConf(null), templates: [] }; }
+  function blank() { return { v: 1, weekText: EXAMPLE, edited: false, memory: {}, sessions: [], mask: [true, true, true, true], sub: 1, conf: sanitizeConf(null), templates: [] }; }
   function normalize(d) {
     var b = blank();
     if (!d || typeof d !== 'object') return b;
@@ -1125,6 +1125,7 @@ SD rlrlrlrl</pre>
       memory: (d.memory && typeof d.memory === 'object' && !Array.isArray(d.memory)) ? d.memory : {},
       sessions: Array.isArray(d.sessions) ? d.sessions : [],
       mask: (Array.isArray(d.mask) && d.mask.length === 4) ? d.mask.map(Boolean) : b.mask,
+      sub: [1, 2, 3, 4].indexOf(d.sub) >= 0 ? d.sub : b.sub,
       conf: sanitizeConf(d.conf),
       templates: (Array.isArray(d.templates) ? d.templates : []).filter(function (t) { return t && typeof t.name === 'string' && typeof t.text === 'string' && t.name.trim(); })
         .map(function (t) { return { name: t.name.trim().slice(0, 40), text: t.text.slice(0, 8000) }; })
@@ -1147,7 +1148,7 @@ SD rlrlrlrl</pre>
     var names = {};
     file.templates.forEach(function (t) { names[t.name] = true; });
     return {
-      v: 1, weekText: file.weekText, edited: file.edited, mask: file.mask, conf: file.conf,
+      v: 1, weekText: file.weekText, edited: file.edited, mask: file.mask, sub: file.sub, conf: file.conf,
       memory: memory, sessions: sessions,
       templates: file.templates.concat(local.templates.filter(function (t) { return !names[t.name]; }))
     };
@@ -1383,7 +1384,7 @@ SD rlrlrlrl</pre>
     if (S.finished) { renderSummary(box); return; }
     if (S.type === 'routine') { renderRoutine(box); return; }
     var l = curLine(), st = curStep(l), T = TYPES[S.type];
-    Click.bpm = l.tempo; Click.sub = 1;
+    Click.bpm = l.tempo; Click.sub = state.sub;
     ladderMask();
     var ticks = '';
     if (S.type !== 'groove') for (var i = 0; i < st.reps; i++) ticks += '<span class="tick"></span>';
@@ -1421,7 +1422,8 @@ SD rlrlrlrl</pre>
       '<div class="presets"><button class="btn small" data-preset="all">All</button>' +
       '<button class="btn small" data-preset="no3">Mute 3</button>' +
       '<button class="btn small" data-preset="no24">Mute 2 and 4</button>' +
-      '<button class="btn small" data-preset="only1">Only 1</button></div></div>' +
+      '<button class="btn small" data-preset="only1">Only 1</button></div>' +
+      '<div class="cl-h" style="margin-top:12px">Subdivision click</div>' + subChips(state.sub) + '</div>' +
       (l.pattern ? '<div class="nt" data-nt="live"></div>' : '') +
       '<ul class="lines">' + rows + '</ul>';
     paintNotation();
@@ -1432,14 +1434,18 @@ SD rlrlrlrl</pre>
     return '<button class="btn small" data-bpm="' + d + '" aria-label="' + (d > 0 ? 'Faster by ' : 'Slower by ') + Math.abs(d) + ' BPM">' + (d > 0 ? '+' : '\u2212') + Math.abs(d) + '</button>';
   }).join('') + '</div>';
 
+  function subChips(cur) {
+    return '<div class="presets">' + [['1', 'Quarters'], ['2', '8ths'], ['3', 'Triplets'], ['4', '16ths']].map(function (x) {
+      var on = (cur || 1) === Number(x[0]);
+      return '<button class="btn small' + (on ? ' primary' : '') + '" data-sub="' + x[0] + '" aria-pressed="' + on + '">' + x[1] + '</button>';
+    }).join('') + '</div>';
+  }
+
   function renderRoutine(box) {
     var l = curLine();
     if (l.tempo) Click.bpm = l.tempo;
     Click.sub = l.sub || 1;
     NT = { live: l.pattern };
-    var subChips = [['1', 'Quarters'], ['2', '8ths'], ['3', 'Triplets'], ['4', '16ths']].map(function (x) {
-      return '<button class="btn small' + ((l.sub || 1) === Number(x[0]) ? ' primary' : '') + '" data-sub="' + x[0] + '">' + x[1] + '</button>';
-    }).join('');
     var rows = S.lines.map(function (x, idx) {
       return '<li class="' + (x.done ? 'done' : '') + '"><button data-line="' + idx + '"' + (idx === S.active ? ' aria-current="true"' : '') + '>' +
         '<span class="name">' + esc(x.name) + '</span><span class="meta">' + (x.done ? 'Done' : itemMeta({ tempo: x.tempo, secs: x.secs })) + '</span></button></li>';
@@ -1457,7 +1463,7 @@ SD rlrlrlrl</pre>
       (l.pattern ? '<div class="nt" data-nt="live"></div>' : '') +
       '<div class="beats" id="beats" aria-hidden="true"><span class="bd"></span><span class="bd"></span><span class="bd"></span><span class="bd"></span></div>' +
       '<div class="count" id="cnt" aria-live="polite"></div></div>' +
-      (l.tempo ? '<div class="clickbox"><div class="cl-h">Subdivision click</div><div class="presets">' + subChips + '</div></div>' : '') +
+      (l.tempo ? '<div class="clickbox"><div class="cl-h">Subdivision click</div>' + subChips(l.sub) + '</div>' : '') +
       '<button class="btn big" data-act="toggle">' + (S.running ? 'Pause' : (S.started ? 'Resume' : 'Start')) + '</button>' +
       (l.tempo
         ? '<div class="pair"><button class="btn danger" data-act="miss">Mistake, restart bars</button><button class="btn primary" data-act="done">Done, next</button></div>'
@@ -1840,9 +1846,11 @@ SD rlrlrlrl</pre>
       return;
     }
     var subBtn = e.target.closest('[data-sub]');
-    if (subBtn && !S.finished && S.type === 'routine') {
-      curLine().sub = Number(subBtn.dataset.sub);
-      Click.sub = curLine().sub;
+    if (subBtn && !S.finished) {
+      var sv = Number(subBtn.dataset.sub);
+      if (S.type === 'routine') curLine().sub = sv;
+      else { state.sub = sv; save(); }
+      Click.sub = sv;
       renderPractice();
       return;
     }
