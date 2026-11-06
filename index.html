@@ -347,7 +347,7 @@ textarea {
       <summary>How to write sections and notes</summary>
       <p>A line starting with <code>#</code> starts a section. Add the minutes after a comma. Every line under it is an exercise.</p>
       <p>The type of section sets the rules. It comes from the name (Stick: ladder, Sync: four-way, Carmine, groove or fill: groove), or write it after a comma: <code>ladder</code>, <code>four-way</code>, <code>groove</code> or <code>routine</code>.</p>
-      <p>A routine is a checklist (hand speed, warm-ups). Each line is <code>Name 80 BPM 2 min: details</code>. Tempo and time are optional. With a time the item moves on by itself. With a tempo the metronome plays it after a bar of count-in. After 5 clean bars it rests a second, then plays a new bar of count-in 5 BPM faster. Press Mistake and those 5 bars start again. Next session the item starts 1 BPM above where it started this time. If every item has a time, the section runs for their total.</p>
+      <p>A routine is a checklist (hand speed, warm-ups). Each line is <code>Name 80 BPM 2 min: details</code>. Tempo and time are optional. With a time the item moves on by itself. With a tempo the metronome plays it after a bar of count-in. After 5 clean passes of the notes (5 x 2 bars for a 2-bar exercise) it rests a second, then plays a new bar of count-in 5 BPM faster. Press Mistake and those 5 passes start again. When the time is up, the pass you are playing finishes first. Next session the item starts 1 BPM above where it started this time. If every item has a time, the section runs for their total.</p>
       <p>Under an exercise, add one line per instrument to show its notes. One character per note position, <code>-</code> is a rest, <code>|</code> splits bars.</p>
 <pre># Carmine, 15 min
 Carmine groove p20 #1
@@ -441,11 +441,11 @@ SD rlrlrlrl</pre>
     CFG.drop = CONF.drop; CFG.step = CONF.step; CFG.minutes = CONF.minutes;
   }
   function floorFor(type) { return (CONF[type] || CONF.ladder).floor; }
-  /* routine items with a tempo: `bars` clean bars, a `rest` ms pause, then +bpm after a bar of count-in. Next session starts `next` above this session's start */
-  var RAMP = { bars: 5, bpm: 5, next: 1, rest: 1000 };
+  /* routine items with a tempo: `reps` clean passes of the notes, a `rest` ms pause, then +bpm after a bar of count-in. Next session starts `next` above this session's start */
+  var RAMP = { reps: 5, bpm: 5, next: 1, rest: 1000 };
   function ruleText(type) {
     if (type === 'routine') return 'A checklist. Work down it in order. An item with a time (2 min) moves on by itself, otherwise press Done. An item with a tempo (80 BPM) starts after a bar of count-in. After ' +
-      RAMP.bars + ' clean bars the click rests a second, then goes up ' + RAMP.bpm + ' BPM after a new bar of count-in. A mistake restarts those bars. Next session it starts ' + RAMP.next + ' BPM above this session\'s start.';
+      RAMP.reps + ' clean passes of the notes (' + RAMP.reps + ' x 2 bars for a 2-bar exercise) the click rests a second, then goes up ' + RAMP.bpm + ' BPM after a new bar of count-in. A mistake restarts those passes. When the time is up, the pass you are playing finishes first. Next session it starts ' + RAMP.next + ' BPM above this session\'s start.';
     var c = CONF[type] || CONF.ladder, s = CFG.step, n;
     if (type === 'fourway') {
       n = c.ways.filter(Boolean).length;
@@ -658,7 +658,7 @@ SD rlrlrlrl</pre>
   }
   /* k beats into the item's clean run. Returns true when the tempo went up. */
   function rampBeat(l, k) {
-    if (!l.tempo || k === 0 || k % (4 * RAMP.bars)) return false;
+    if (!l.tempo || k === 0 || k % (RAMP.reps * repBeats(l))) return false;
     l.top = l.tempo;
     l.tempo += RAMP.bpm;
     return true;
@@ -1085,33 +1085,30 @@ SD rlrlrlrl</pre>
     'SD oooooooooooooooo\n'+
     'Drop catch 3 min: 1 Grip reset. 2 Rotate the wrist so the palm faces down. 3 Raise the wrist and drop it, no arm, let the stick bounce, back three fingers away. 4 Make the first bounce more distinct. 5 Stop the stick with the back three fingers, back of the stick on the palm during the reset. 6 Drop the stick with the back three fingers on it, in slow motion. 7 Close the fingers to catch the stick\n'
   /* from Dimitri Fantini's "Get Lightning Fast Feet With This Simple Hack" and "This Simple Kick Technique Instantly Transforms Your SPEED" */
+  /* each foot item twice: right foot, then left foot, each with half the time and its own tempo memory */
+  function bothFeet(name, bpm, time, detail, notes) {
+    return name + ' (right foot) ' + bpm + ' BPM ' + time + ': ' + detail + '\n' + notes +
+      name + ' (left foot) ' + bpm + ' BPM ' + time + ': the same with the left foot\n' + notes;
+  }
   var FOOT_SPEED = '# Foot speed, routine\n' +
-    'Pedal contact 60 BPM 2 min: heel up, the ball of the foot never leaves the footboard, like a finger resting on a piano key. Small motion, the ankle is the hinge\n' +
-    'BD oooooooo\n' +
-    'Ankle subdivisions 50 BPM 3 min: one hand plays quarters on the hi-hat, kicks line up with it, no flams. A bar of eighth-note triplets, then a bar of 16ths, every note evenly spaced. Small motion from the ankle. Once it is clean, push about 10 BPM a day\n' +
-    'HH x--x--x--x--|x---x---x---x---\n' +
-    'BD oooooooooooo|oooooooooooooooo\n' +
-    'Slide technique 60 BPM 2 min: ball of the foot in the middle of the footboard. Hit, then push the foot forward to the top for the second note: one forward motion, two notes. The heel comes down with the second note so the leg rests and the beater comes off the head. A small hop is fine at slow tempos\n' +
-    'BD oo--oo--oo--oo--\n' +
-    'Kick doubles in four places 70 BPM 3 min: rights on the 1 and the &, lefts on the e and the a. The two kicks move one place each bar. Four evenly spaced notes, slide on every double\n' +
-    'SD rl--rl--rl--rl--|r--lr--lr--lr--l|--rl--rl--rl--rl|-lr--lr--lr--lr-\n' +
-    'BD --oo--oo--oo--oo|-oo--oo--oo--oo-|oo--oo--oo--oo--|o--oo--oo--oo--o\n' +
-    'Hands then kick doubles 60 BPM 2 min: left right kick kick, then alternate right left and left right, then doubles in the hands. Move the hands around the toms once it is clean\n' +
-    'SD lr--lr--lr--lr--|rl--lr--rl--lr--|rr--rr--ll--ll--\n' +
-    'BD --oo--oo--oo--oo|--oo--oo--oo--oo|--oo--oo--oo--oo\n' +
-    'Kick doubles in triplets 60 BPM 2 min: right kick kick, then right left right left kick kick and the left-hand version. Play it very slow first and slide on every double\n' +
-    'SD r--r--r--r--|rlrl--rlrl--|lrlr--lrlr--\n' +
-    'BD -oo-oo-oo-oo|----oo----oo|----oo----oo\n' +
-    'Displaced six in triplets 60 BPM 2 min: right left right kick kick left. The last hand gives the foot time to reset, so you can land a kick and crash on the 1. Then the left-hand version\n' +
-    'SD rlr--lrlr--l|lrl--rlrl--r\n' +
-    'BD ---oo----oo-|---oo----oo-\n' +
-    'Six six four fill 60 BPM 2 min: two groups of six (right left right kick kick left) and one of four (right kick kick left) in 16ths. Finish with a kick and crash on the 1\n' +
-    'SD rlr--lrlr--lr--l\n' +
-    'BD ---oo----oo--oo-\n' +
-    'Slide in a groove 90 BPM 2 min: use the slide wherever two 16th kicks come in a row above 90 to 100 BPM. Also play it slow with the same motion\n' +
-    'HH x-x-x-x-x-x-x-x-\n' +
-    'SD ----o-------o---\n' +
-    'BD o-----oo--oo----\n';
+    bothFeet('Pedal contact', 60, '1 min', 'heel up, the ball of the foot never leaves the footboard, like a finger resting on a piano key. Small motion, the ankle is the hinge',
+      'BD oooooooo\n') +
+    bothFeet('Ankle subdivisions', 50, '90 s', 'one hand plays quarters on the hi-hat, kicks line up with it, no flams. A bar of eighth-note triplets, then a bar of 16ths, every note evenly spaced. Small motion from the ankle. Once it is clean, push about 10 BPM a day',
+      'HH x--x--x--x--|x---x---x---x---\nBD oooooooooooo|oooooooooooooooo\n') +
+    bothFeet('Slide technique', 60, '1 min', 'ball of the foot in the middle of the footboard. Hit, then push the foot forward to the top for the second note: one forward motion, two notes. The heel comes down with the second note so the leg rests and the beater comes off the head. A small hop is fine at slow tempos',
+      'BD oo--oo--oo--oo--\n') +
+    bothFeet('Kick doubles in four places', 70, '90 s', 'rights on the 1 and the &, lefts on the e and the a. The two kicks move one place each bar. Four evenly spaced notes, slide on every double',
+      'SD rl--rl--rl--rl--|r--lr--lr--lr--l|--rl--rl--rl--rl|-lr--lr--lr--lr-\nBD --oo--oo--oo--oo|-oo--oo--oo--oo-|oo--oo--oo--oo--|o--oo--oo--oo--o\n') +
+    bothFeet('Hands then kick doubles', 60, '1 min', 'left right kick kick, then alternate right left and left right, then doubles in the hands. Move the hands around the toms once it is clean',
+      'SD lr--lr--lr--lr--|rl--lr--rl--lr--|rr--rr--ll--ll--\nBD --oo--oo--oo--oo|--oo--oo--oo--oo|--oo--oo--oo--oo\n') +
+    bothFeet('Kick doubles in triplets', 60, '1 min', 'right kick kick, then right left right left kick kick and the left-hand version. Play it very slow first and slide on every double',
+      'SD r--r--r--r--|rlrl--rlrl--|lrlr--lrlr--\nBD -oo-oo-oo-oo|----oo----oo|----oo----oo\n') +
+    bothFeet('Displaced six in triplets', 60, '1 min', 'right left right kick kick left. The last hand gives the foot time to reset, so you can land a kick and crash on the 1. Then the left-hand version',
+      'SD rlr--lrlr--l|lrl--rlrl--r\nBD ---oo----oo-|---oo----oo-\n') +
+    bothFeet('Six six four fill', 60, '1 min', 'two groups of six (right left right kick kick left) and one of four (right kick kick left) in 16ths. Finish with a kick and crash on the 1',
+      'SD rlr--lrlr--lr--l\nBD ---oo----oo--oo-\n') +
+    bothFeet('Slide in a groove', 90, '1 min', 'use the slide wherever two 16th kicks come in a row above 90 to 100 BPM. Also play it slow with the same motion',
+      'HH x-x-x-x-x-x-x-x-\nSD ----o-------o---\nBD o-----oo--oo----\n');
   var EXAMPLE = '# Stick Control, 10 min\n' + STICK_SAMPLE + '\n\n# Syncopation, 20 min\nSyncopation p5 #7\nSyncopation p5 #8\n\n# Carmine, 15 min\n' + SAMPLE;
 
   function blank() { return { v: 1, weekText: EXAMPLE, edited: false, memory: {}, sessions: [], mask: [true, true, true, true], sub: 1, conf: sanitizeConf(null), templates: [] }; }
@@ -1278,9 +1275,11 @@ SD rlrlrlrl</pre>
   Click.audible = function (idx) {
     if (!S) return true;
     if (S.type === 'routine') {
-      /* the downbeat after the last clean bar is where the rest starts: keep it silent */
-      var k = idx - S.base;
-      return !!(S.lines[S.active] && S.lines[S.active].tempo) && !(idx >= S.ciEnd && k > 0 && k % (4 * RAMP.bars) === 0);
+      /* the downbeat after the last pass of a block (or of a finishing item) is where the rest starts: keep it silent */
+      var k = idx - S.base, al = S.lines[S.active];
+      if (!al || !al.tempo) return false;
+      var rb = repBeats(al);
+      return !(idx >= S.ciEnd && k > 0 && k % (al.finishing ? rb : RAMP.reps * rb) === 0);
     }
     if (idx < S.ciEnd) return true;
     return !!S.mask[idx % 4];
@@ -1470,7 +1469,8 @@ SD rlrlrlrl</pre>
       '<span>' + (S.queue && S.queue.length ? '<button class="btn small" data-act="next">Next: ' + esc(S.queue[0].name) + '</button> ' : '') +
       '<button class="btn small" data-act="end">End session</button></span></div>' +
       '<div class="now"><div class="label">' + esc(l.name) + '</div>' +
-      (l.tempo ? '<div class="rt-tempo" id="rtTempo">' + l.tempo + ' BPM</div>' + BPM_ADJ : '') +
+      (l.tempo ? '<div class="rt-tempo" id="rtTempo">' + l.tempo + ' BPM</div>' + BPM_ADJ +
+        '<div class="ticks" id="ticks" aria-hidden="true">' + new Array(RAMP.reps + 1).join('<span class="tick"></span>') + '</div>' : '') +
       (l.secs ? '<div class="rt-tempo" id="itclock">' + mmss(l.secs * 1000 - l.spent) + '</div>' : '') +
       (l.detail ? '<div class="rt-detail">' + esc(l.detail) + '</div>' : '') +
       (l.pattern ? '<div class="nt" data-nt="live"></div>' : '') +
@@ -1479,7 +1479,7 @@ SD rlrlrlrl</pre>
       (l.tempo ? '<div class="clickbox"><div class="cl-h">Subdivision click</div>' + subChips(l.sub, !!(l.pattern && l.pattern.bars)) + '</div>' : '') +
       '<button class="btn big" data-act="toggle">' + (S.running ? 'Pause' : (S.started ? 'Resume' : 'Start')) + '</button>' +
       (l.tempo
-        ? '<div class="pair"><button class="btn danger" data-act="miss">Mistake, restart bars</button><button class="btn primary" data-act="done">Done, next</button></div>'
+        ? '<div class="pair"><button class="btn danger" data-act="miss">Mistake, restart</button><button class="btn primary" data-act="done">Done, next</button></div>'
         : '<button class="btn primary big" data-act="done" style="margin-top:10px">Done, next</button>') +
       '<ul class="lines">' + rows + '</ul>';
     paintNotation();
@@ -1492,13 +1492,24 @@ SD rlrlrlrl</pre>
       var rl = curLine(), rd = document.querySelectorAll('#beats .bd');
       for (var q = 0; q < rd.length; q++) rd[q].className = 'bd' + (S.running && S.pos === q && rl.tempo ? (S.phase === 'play' ? ' on' : ' ci') : '');
       if ($('rtTempo')) $('rtTempo').textContent = rl.tempo + ' BPM';
+      /* tally boxes: one per pass of the notes in the current block */
+      var rrb = repBeats(rl), playing = S.running && S.phase === 'play';
+      var passes = S.running && S.phase === 'rest' ? (S.restFull ? RAMP.reps : 0) : (playing ? Math.floor(S.k / rrb) : 0);
+      var rpct = playing ? ((S.k % rrb) + 1) / rrb * 100 : null;
+      var rt = document.querySelectorAll('#ticks .tick');
+      for (var t = 0; t < rt.length; t++) {
+        var rcur = t === passes && rpct != null;
+        rt[t].className = 'tick' + (t < passes ? ' on' : '') + (rcur ? ' cur' : '');
+        if (rcur) rt[t].style.setProperty('--p', rpct.toFixed(1) + '%'); else rt[t].style.removeProperty('--p');
+      }
       var rc = $('cnt'), left = S.lines.filter(function (x) { return !x.done; }).length + ' left.';
       if (rc) rc.textContent = !rl.tempo ? left
         : (!S.running ? (S.started ? 'Paused. ' : 'Press Start. A bar of count-in comes first. ')
           : S.phase === 'countin' ? 'Count-in. '
-          : S.phase === 'wait' ? 'The ' + RAMP.bars + ' bars restart on the next bar. '
+          : S.phase === 'wait' ? 'The ' + RAMP.reps + ' passes restart on the next bar. '
           : S.phase === 'rest' ? 'Rest. A bar of count-in at ' + rl.tempo + ' BPM comes next. '
-          : 'Bar ' + (Math.floor(S.k / 4) % RAMP.bars + 1) + ' of ' + RAMP.bars + ', then ' + (rl.tempo + RAMP.bpm) + ' BPM. ') +
+          : rl.finishing ? 'Time is up. Finish this pass. '
+          : 'Pass ' + (passes + 1) + ' of ' + RAMP.reps + ', then ' + (rl.tempo + RAMP.bpm) + ' BPM. ') +
           rl.mistakes + (rl.mistakes === 1 ? ' mistake. ' : ' mistakes. ') + left;
       return;
     }
@@ -1535,8 +1546,9 @@ SD rlrlrlrl</pre>
       S.phase = 'play';
       var k = idx - S.base;
       if (S.type === 'routine') {
+        if (k > 0 && curLine().finishing && k % repBeats(curLine()) === 0) { finishItem(); return; }
         if (rampBeat(curLine(), k)) {
-          S.phase = 'rest'; S.pos = null; S.k = 0;
+          S.phase = 'rest'; S.pos = null; S.k = 0; S.restFull = true;
           Click.restThen(RAMP.rest, restartClick);
           updateLive();
           return;
@@ -1927,6 +1939,8 @@ SD rlrlrlrl</pre>
       if (S.running) restartCountIn();
     } else if (act === 'miss') {
       mistake(S);
+      /* time is already up: a broken last pass ends the item instead of starting another */
+      if (S.type === 'routine' && S.running && curLine().finishing) { finishItem(); return; }
       if (S.running && S.phase !== 'countin' && S.phase !== 'rest') {
         S.base = barAtOrAfter(S.last + 1);
         S.phase = 'wait';
@@ -1946,15 +1960,26 @@ SD rlrlrlrl</pre>
     renderWeek();
   });
 
-  function routineDone() {
+  /* resting: the click is already resting and restarts by itself on the next item */
+  function routineDone(resting) {
     var cl = curLine();
     cl.done = true;
+    cl.finishing = false;
     var nx = -1;
     for (var q = 1; q <= S.lines.length; q++) { var qi = (S.active + q) % S.lines.length; if (!S.lines[qi].done) { nx = qi; break; } }
     if (nx === -1) { if (S.queue && S.queue.length) nextPart('done'); else finishSession('done'); return; }
     S.active = nx;
-    if (S.running) restartCountIn();
+    if (S.running && resting !== true) restartCountIn();
     renderPractice();
+  }
+
+  /* time ran out and the pass being played has just ended: rest a second, then the next item (or the section ends) */
+  function finishItem() {
+    curLine().finishing = false;
+    if (S.elapsed >= S.minutes * 60000) { if (S.queue && S.queue.length) nextPart('time'); else finishSession('time'); return; }
+    S.phase = 'rest'; S.pos = null; S.k = 0; S.restFull = false;
+    Click.restThen(RAMP.rest, restartClick);
+    routineDone(true);
   }
 
   function partDone() {
@@ -2008,11 +2033,16 @@ SD rlrlrlrl</pre>
         rl.spent = (rl.spent || 0) + dt;
         var ic = $('itclock');
         if (ic && rl.secs) ic.textContent = mmss(rl.secs * 1000 - rl.spent);
-        if (rl.secs && rl.spent >= rl.secs * 1000) { routineDone(); tPrev = now; return; }
+        if ((rl.secs && rl.spent >= rl.secs * 1000) || S.elapsed >= S.minutes * 60000) {
+          /* with a click going, let the pass being played finish (handleBeat ends it); otherwise move on now */
+          if (rl.tempo && S.phase === 'play') {
+            if (!rl.finishing) { rl.finishing = true; updateLive(); }
+          } else if (rl.secs && rl.spent >= rl.secs * 1000) { routineDone(); tPrev = now; return; }
+        }
       }
       var clock = $('clock');
       if (clock) clock.textContent = mmss(S.minutes * 60000 - S.elapsed);
-      if (S.elapsed >= S.minutes * 60000) {
+      if (S.elapsed >= S.minutes * 60000 && !(S.type === 'routine' && curLine().finishing)) {
         if (S.type === 'groove' || (S.type !== 'routine' && curLine().count > 0)) {
           if (!S.overtime) {
             S.overtime = true;
