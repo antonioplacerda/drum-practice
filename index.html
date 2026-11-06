@@ -347,7 +347,7 @@ textarea {
       <summary>How to write sections and notes</summary>
       <p>A line starting with <code>#</code> starts a section. Add the minutes after a comma. Every line under it is an exercise.</p>
       <p>The type of section sets the rules. It comes from the name (Stick: ladder, Sync: four-way, Carmine, groove or fill: groove), or write it after a comma: <code>ladder</code>, <code>four-way</code>, <code>groove</code> or <code>routine</code>.</p>
-      <p>A routine is a checklist (hand speed, warm-ups). Each line is <code>Name 80 BPM 2 min: details</code>. Tempo and time are optional. With a time the item moves on by itself. With a tempo the metronome plays it after a bar of count-in and adds 1 BPM after every 4 clean bars. Press Mistake and those 4 bars start again. Next session the item starts 1 BPM above where it started this time. If every item has a time, the section runs for their total.</p>
+      <p>A routine is a checklist (hand speed, warm-ups). Each line is <code>Name 80 BPM 2 min: details</code>. Tempo and time are optional. With a time the item moves on by itself. With a tempo the metronome plays it after a bar of count-in. After 5 clean bars it rests a second, then plays a new bar of count-in 5 BPM faster. Press Mistake and those 5 bars start again. Next session the item starts 1 BPM above where it started this time. If every item has a time, the section runs for their total.</p>
       <p>Under an exercise, add one line per instrument to show its notes. One character per note position, <code>-</code> is a rest, <code>|</code> splits bars.</p>
 <pre># Carmine, 15 min
 Carmine groove p20 #1
@@ -441,11 +441,11 @@ SD rlrlrlrl</pre>
     CFG.drop = CONF.drop; CFG.step = CONF.step; CFG.minutes = CONF.minutes;
   }
   function floorFor(type) { return (CONF[type] || CONF.ladder).floor; }
-  /* routine items with a tempo: +bpm after every `bars` clean bars, and next session starts `next` above this session's start */
-  var RAMP = { bars: 4, bpm: 1, next: 1 };
+  /* routine items with a tempo: `bars` clean bars, a `rest` ms pause, then +bpm after a bar of count-in. Next session starts `next` above this session's start */
+  var RAMP = { bars: 5, bpm: 5, next: 1, rest: 1000 };
   function ruleText(type) {
-    if (type === 'routine') return 'A checklist. Work down it in order. An item with a time (2 min) moves on by itself, otherwise press Done. An item with a tempo (80 BPM) starts after a bar of count-in and goes up ' +
-      RAMP.bpm + ' BPM after every ' + RAMP.bars + ' clean bars. A mistake restarts those bars. Next session it starts ' + RAMP.next + ' BPM above this session\'s start.';
+    if (type === 'routine') return 'A checklist. Work down it in order. An item with a time (2 min) moves on by itself, otherwise press Done. An item with a tempo (80 BPM) starts after a bar of count-in. After ' +
+      RAMP.bars + ' clean bars the click rests a second, then goes up ' + RAMP.bpm + ' BPM after a new bar of count-in. A mistake restarts those bars. Next session it starts ' + RAMP.next + ' BPM above this session\'s start.';
     var c = CONF[type] || CONF.ladder, s = CFG.step, n;
     if (type === 'fourway') {
       n = c.ways.filter(Boolean).length;
@@ -1227,6 +1227,13 @@ SD rlrlrlrl</pre>
       this.timer = setInterval(function () { self.tick(); }, 25);
     },
     stop: function () { clearInterval(this.timer); this.timer = null; this.gen++; },
+    /* stop, then call cb after ms unless the click was started or stopped again in the meantime */
+    restThen: function (ms, cb) {
+      var self = this;
+      this.stop();
+      var g = this.gen;
+      setTimeout(function () { if (g === self.gen) cb(); }, ms);
+    },
     tick: function () {
       while (this.next < this.now() + 0.12) {
         var idx = this.beat, when = this.next;
@@ -1268,7 +1275,11 @@ SD rlrlrlrl</pre>
 
   Click.audible = function (idx) {
     if (!S) return true;
-    if (S.type === 'routine') return !!(S.lines[S.active] && S.lines[S.active].tempo);
+    if (S.type === 'routine') {
+      /* the downbeat after the last clean bar is where the rest starts: keep it silent */
+      var k = idx - S.base;
+      return !!(S.lines[S.active] && S.lines[S.active].tempo) && !(idx >= S.ciEnd && k > 0 && k % (4 * RAMP.bars) === 0);
+    }
     if (idx < S.ciEnd) return true;
     return !!S.mask[idx % 4];
   };
@@ -1467,6 +1478,7 @@ SD rlrlrlrl</pre>
         : (!S.running ? (S.started ? 'Paused. ' : 'Press Start. A bar of count-in comes first. ')
           : S.phase === 'countin' ? 'Count-in. '
           : S.phase === 'wait' ? 'The ' + RAMP.bars + ' bars restart on the next bar. '
+          : S.phase === 'rest' ? 'Rest. A bar of count-in at ' + rl.tempo + ' BPM comes next. '
           : 'Bar ' + (Math.floor(S.k / 4) % RAMP.bars + 1) + ' of ' + RAMP.bars + ', then ' + (rl.tempo + RAMP.bpm) + ' BPM. ') +
           rl.mistakes + (rl.mistakes === 1 ? ' mistake. ' : ' mistakes. ') + left;
       return;
@@ -1504,7 +1516,12 @@ SD rlrlrlrl</pre>
       S.phase = 'play';
       var k = idx - S.base;
       if (S.type === 'routine') {
-        if (rampBeat(curLine(), k)) Click.bpm = curLine().tempo;
+        if (rampBeat(curLine(), k)) {
+          S.phase = 'rest'; S.pos = null; S.k = 0;
+          Click.restThen(RAMP.rest, restartClick);
+          updateLive();
+          return;
+        }
       } else if (k > 0 && k % repBeats(curLine()) === 0) {
         if (addRep(S, 1)) { advance(idx); return; }
       }
@@ -1523,7 +1540,19 @@ SD rlrlrlrl</pre>
     renderPractice();
   }
 
+  /* start the click from scratch on the current line's tempo, with a bar of count-in */
+  function restartClick() {
+    if (!S || !S.running || S.finished) return;
+    Click.bpm = curLine().tempo || Click.bpm || 80;
+    Click.start();
+    S.ciEnd = S.base = 4;
+    S.last = -1; S.pos = null; S.k = 0;
+    S.phase = 'countin';
+    updateLive();
+  }
+
   function restartCountIn() {
+    if (!Click.timer) { if (S.running) restartClick(); return; } /* during a rest the click is stopped */
     var nd = barAtOrAfter(S.last + 1);
     S.ciEnd = S.base = nd + 4;
     S.phase = S.running ? 'countin' : 'idle';
@@ -1877,7 +1906,7 @@ SD rlrlrlrl</pre>
       if (S.running) restartCountIn();
     } else if (act === 'miss') {
       mistake(S);
-      if (S.running && S.phase !== 'countin') {
+      if (S.running && S.phase !== 'countin' && S.phase !== 'rest') {
         S.base = barAtOrAfter(S.last + 1);
         S.phase = 'wait';
         S.k = 0;
@@ -1951,7 +1980,7 @@ SD rlrlrlrl</pre>
   setInterval(function () {
     var now = performance.now();
     if (S && S.running && !S.finished) {
-      var dt = S.type === 'routine' && S.phase === 'countin' && curLine().tempo ? 0 : now - tPrev;
+      var dt = S.type === 'routine' && (S.phase === 'countin' || S.phase === 'rest') && curLine().tempo ? 0 : now - tPrev;
       S.elapsed += dt;
       if (S.type === 'routine') {
         var rl = curLine();
