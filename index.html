@@ -1079,22 +1079,37 @@ SD rlrlrlrl</pre>
     'SD oooo|oooooooo|oooooooooooo|oooooooooooooooo\n'+
     'Fulcrum 80 BPM 2 min: palm down, fulcrum between the last knuckle of the index finger and the thumb, back three fingers away from the stick. Strike the pad, 16th notes: R, L, both hands, then alternating\n'+
     'SD rrrrrrrr|llllllll|r/lr/lr/lr/lr/lr/lr/lr/l|rlrlrlrlrlrlrlrl\n'+
-    'Wrist 80 BPM 2 min: No air between the back of the stick and your palm, seal the stick to the palm with the back three fingers. Keep the stick height consistent\n'+
+    'Wrist right 60 BPM 2 min: No air between the back of the stick and your palm, seal the stick to the palm with the back three fingers. Keep the stick height consistent\n'+
+    'SD oooooooo|oooooooooooooooo\n'+
+    'Wrist left 60 BPM 2 min: No air between the back of the stick and your palm, seal the stick to the palm with the back three fingers. Keep the stick height consistent\n'+
     'SD oooooooo|oooooooooooooooo\n'+
     'Finger dribbling 2 min: Alternate by bar: thumb and index alone, then add middle, ring, pinky, then all fingers, repeat\n'+
     'SD oooooooooooooooo\n'+
     'Drop catch 3 min: 1 Grip reset. 2 Rotate the wrist so the palm faces down. 3 Raise the wrist and drop it, no arm, let the stick bounce, back three fingers away. 4 Make the first bounce more distinct. 5 Stop the stick with the back three fingers, back of the stick on the palm during the reset. 6 Drop the stick with the back three fingers on it, in slow motion. 7 Close the fingers to catch the stick\n'
   /* from Dimitri Fantini's "Get Lightning Fast Feet With This Simple Hack" and "This Simple Kick Technique Instantly Transforms Your SPEED" */
-  /* each foot item twice: right foot, then left foot, each with half the time and its own tempo memory */
+  /* each foot item twice: right foot, then left foot, each with half the time and its own tempo memory.
+     The left-foot item is the mirror image: R and L swap in the sticking and in the text. */
+  function mirrorWords(s) {
+    return s.replace(/\b(right|left)(?=s?\b)/gi, function (w) {
+      var m = /^r/i.test(w) ? 'left' : 'right';
+      return w.charAt(0) === w.charAt(0).toUpperCase() ? m.charAt(0).toUpperCase() + m.slice(1) : m;
+    });
+  }
+  function mirrorNotes(notes) {
+    return notes.replace(/^(\S+\s+)(.*)$/gm, function (_, lane, pat) {
+      return lane + pat.replace(/[rlRL]/g, function (c) { return { r: 'l', l: 'r', R: 'L', L: 'R' }[c]; });
+    });
+  }
   function bothFeet(name, bpm, time, detail, notes) {
     return name + ' (right foot) ' + bpm + ' BPM ' + time + ': ' + detail + '\n' + notes +
-      name + ' (left foot) ' + bpm + ' BPM ' + time + ': the same with the left foot\n' + notes;
+      name + ' (left foot) ' + bpm + ' BPM ' + time + ': ' + mirrorWords(detail) + '\n' + mirrorNotes(notes);
   }
   var FOOT_SPEED = '# Foot speed, routine\n' +
     bothFeet('Pedal contact', 60, '1 min', 'heel up, the ball of the foot never leaves the footboard, like a finger resting on a piano key. Small motion, the ankle is the hinge',
       'BD oooooooo\n') +
     bothFeet('Ankle subdivisions', 50, '90 s', 'one hand plays quarters on the hi-hat, kicks line up with it, no flams. A bar of eighth-note triplets, then a bar of 16ths, every note evenly spaced. Small motion from the ankle. Once it is clean, push about 10 BPM a day',
-      'HH x--x--x--x--|x---x---x---x---\nBD oooooooooooo|oooooooooooooooo\n') +
+      'HH x--x--x--x--|x---x---x---x---\n' +
+      'BD oooooooooooo|oooooooooooooooo\n') +
     bothFeet('Slide technique', 60, '1 min', 'ball of the foot in the middle of the footboard. Hit, then push the foot forward to the top for the second note: one forward motion, two notes. The heel comes down with the second note so the leg rests and the beater comes off the head. A small hop is fine at slow tempos',
       'BD oo--oo--oo--oo--\n') +
     bothFeet('Kick doubles in four places', 70, '90 s', 'rights on the 1 and the &, lefts on the e and the a. The two kicks move one place each bar. Four evenly spaced notes, slide on every double',
