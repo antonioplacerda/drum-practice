@@ -150,6 +150,7 @@ textarea {
   font: 14px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   overflow-x: auto;
 }
+.help .syms { margin: 6px 0; padding-left: 20px; }
 .help code { font: 14px ui-monospace, "SF Mono", Menlo, Consolas, monospace; background: var(--surface); padding: 0 4px; border-radius: 4px; }
 .tpl { margin: 14px 0 0; }
 .tpl select, .tpl input[type=text] { flex: 1; min-width: 0; min-height: 44px; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; }
@@ -312,6 +313,7 @@ textarea {
 .nt-svg .cn { fill: var(--ink); font: 700 11px var(--body); }
 .nt-svg .stR { fill: var(--ink); font: 700 14px var(--body); }
 .nt-svg .stL { fill: var(--accent); font: 700 14px var(--body); }
+.nt .gs { display: inline-block; margin-top: 2px; font-size: 13px; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -346,7 +348,8 @@ textarea {
     <details class="help">
       <summary>How to write sections and notes</summary>
       <p>A line starting with <code>#</code> starts a section. Add the minutes after a comma. Every line under it is an exercise.</p>
-      <p>The type of section sets the rules. It comes from the name (Stick: ladder, Sync: four-way, Carmine, groove or fill: groove), or write it after a comma: <code>ladder</code>, <code>four-way</code>, <code>groove</code> or <code>routine</code>.</p>
+      <p>The type of section sets the rules: <code>ladder</code> (the default), <code>routine</code>, or one of your methods from the Methods tab (<code>four-way</code>, <code>groove</code>, <code>kick permutations</code>...). Write it after a comma, or let the section name pick it: a name containing a method's name uses it, Sync uses four-way, Carmine, groove or fill use groove.</p>
+      <p>In ladder, four-way and groove sections, a tempo in the exercise line sets where that line starts, instead of the starting tempo in Methods: <code>Timing subdivisions 50 BPM</code>. Coming back to it, it starts below your best clean tempo as usual, but never below that tempo.</p>
       <p>A routine is a checklist (hand speed, warm-ups). Each line is <code>Name 80 BPM 2 min: details</code>. Tempo and time are optional. With a time the item moves on by itself. With a tempo the metronome plays it after a bar of count-in. After 5 clean passes of the notes (5 x 2 bars for a 2-bar exercise) it rests a second, then plays a new bar of count-in 5 BPM faster. Press Mistake and those 5 passes start again. When the time is up, the pass you are playing finishes first. Next session the item starts 1 BPM above where it started this time. If every item has a time, the section runs for their total.</p>
       <p>Under an exercise, add one line per instrument to show its notes. One character per note position, <code>-</code> is a rest, <code>|</code> splits bars.</p>
 <pre># Carmine, 15 min
@@ -354,14 +357,28 @@ Carmine groove p20 #1
 HH x-x-x-x-x-x-x-x-
 SD ----o-------o---
 BD o-------o-------</pre>
-      <p>Instruments: <code>HH</code> hi-hat, <code>CY</code> ride, <code>CR</code> crash, <code>SD</code>, <code>HT</code>, <code>MT</code>, <code>FT</code> toms, <code>BD</code> kick, <code>HF</code> hi-hat foot. Use 4, 8 or 16 characters per bar (quarters, eighths, sixteenths). Instruments in the same bar can use different lengths. <code>g</code> is a ghost note, <code>o</code> on HH is open. 4/4 only.</p>
+      <p>Instruments: <code>HH</code> hi-hat, <code>CY</code> ride, <code>CR</code> crash, <code>SD</code>, <code>HT</code>, <code>MT</code>, <code>FT</code> toms, <code>BD</code> kick, <code>HF</code> hi-hat foot. Use 4, 8 or 16 characters per bar (quarters, eighths, sixteenths). Instruments in the same bar can use different lengths. 4/4 only.</p>
+      <p>Symbols, the same as GrooveScribe's. A capital letter is accented (<code>O</code>, <code>X</code>, <code>R</code>, <code>F</code>...).</p>
+      <ul class="syms">
+        <li><code>o</code> note, open on <code>HH</code></li>
+        <li><code>x</code> note, cross-stick on <code>SD</code></li>
+        <li><code>+</code> closed hi-hat</li>
+        <li><code>g</code> ghost note</li>
+        <li><code>f</code> flam, <code>d</code> drag, <code>z</code> buzz roll</li>
+        <li><code>-</code> rest</li>
+      </ul>
+<pre>HH X-x-X-x-X-x-X-o-
+SD g-g-O-g-gg--O-gf
+BD o-----o---o-----</pre>
       <p>Triplets: write 12 characters per bar (three per beat, eighth-note triplets) or 24 (six per beat). They get a bracket with a 3. A beat is a triplet beat as soon as one note falls off the straight grid, so keep each beat either straight or triplet.</p>
 <pre>HH x-xx-xx-xx-x
 SD ---o-----o--
 BD o-----o-----</pre>
-      <p>Sticking: write <code>r</code> or <code>l</code> instead of <code>o</code>, and <code>b</code> for both hands. The letters appear under the notes (R in black, L in gold).</p>
+      <p>Sticking: write <code>r</code> or <code>l</code> instead of <code>o</code>, and <code>b</code> for both hands (<code>R</code>, <code>L</code>, <code>B</code> accented). The letters appear under the notes (R in black, L in gold). To give sticking to flams, ghost notes or toms, add an <code>ST</code> line with only the sticking.</p>
 <pre>Stick Control p5 #1 singles
 SD rlrlrlrl</pre>
+      <p>Beat Mapper and GrooveScribe: paste a link from <a href="https://beats.drumbeatsonline.com/" target="_blank" rel="noopener">beats.drumbeatsonline.com</a> or mikeslessons.com/groove on the line under an exercise, or on its own line (the exercise takes the groove's title). Text before the link on the same line names the exercise. Every staff here has an Open in Beat Mapper link to hear or edit it there.</p>
+      <p>On the practice screen, the subdivision click can Follow notes: each beat clicks the notes' subdivision (8ths, 16ths or triplets, bar by bar), and accented notes between the beats click a little louder, still lower than the beat.</p>
       <p>One rep is one pass of the notes, one bar at 4/4 (two bars if you write two). The boxes fill by themselves as the click runs.</p>
     </details>
     <div id="secs"></div>
@@ -393,14 +410,7 @@ SD rlrlrlrl</pre>
   /* LOGIC START */
   /* ---- settings (Methods tab) ---- */
   function defaultConf() {
-    var g = [];
-    for (var i = 0; i < 19; i++) g.push(true);
-    return {
-      drop: 10, step: 5, minutes: 10,
-      ladder: { reps: 20, floor: 60 },
-      fourway: { reps: 10, floor: 60, ways: [true, true, true, true] },
-      groove: { reps: 4, floor: 60, ways: g }
-    };
+    return { drop: 10, step: 5, minutes: 10, ladder: { reps: 20, floor: 60 }, off: {} };
   }
   function clampInt(v, lo, hi, dflt) {
     v = parseInt(v, 10);
@@ -410,27 +420,19 @@ SD rlrlrlrl</pre>
   function sanitizeConf(c) {
     var d = defaultConf();
     c = c && typeof c === 'object' ? c : {};
-    /* an older saved setup had one starting tempo for everything: it becomes each method's default */
-    var legacyFloor = clampInt(c.floor, 30, 300, 60);
+    /* an older saved setup had one starting tempo for everything: it becomes the default */
+    var legacyFloor = clampInt(c.floor, 30, 300, 60), src = c.ladder && typeof c.ladder === 'object' ? c.ladder : {};
     var out = {
       drop: clampInt(c.drop, 0, 60, d.drop),
       step: clampInt(c.step, 1, 30, d.step),
-      minutes: clampInt(c.minutes, 1, 120, d.minutes)
+      minutes: clampInt(c.minutes, 1, 120, d.minutes),
+      ladder: { reps: clampInt(src.reps, 1, 100, d.ladder.reps), floor: clampInt(src.floor, 30, 300, legacyFloor) },
+      off: {}
     };
-    ['ladder', 'fourway', 'groove'].forEach(function (t) {
-      var src = c[t] && typeof c[t] === 'object' ? c[t] : {};
-      out[t] = {
-        reps: clampInt(src.reps, 1, 100, d[t].reps),
-        floor: clampInt(src.floor, 30, 300, legacyFloor)
-      };
-      if (d[t].ways) {
-        var n = d[t].ways.length;
-        out[t].ways = [];
-        for (var i = 0; i < n; i++) {
-          out[t].ways.push(Array.isArray(src.ways) && src.ways.length === n ? (src.ways[i] !== false && src.ways[i] !== 0) : true);
-        }
-        if (!out[t].ways.some(Boolean)) out[t].ways[0] = true;
-      }
+    /* ways switched off, by method and way name */
+    var off = c.off && typeof c.off === 'object' ? c.off : ((c.fourway || c.groove) ? legacyOff(c) : {});
+    Object.keys(off).forEach(function (k) {
+      if (Array.isArray(off[k])) out.off[k] = off[k].filter(function (x) { return typeof x === 'string'; });
     });
     return out;
   }
@@ -440,62 +442,253 @@ SD rlrlrlrl</pre>
     CONF = sanitizeConf(c);
     CFG.drop = CONF.drop; CFG.step = CONF.step; CFG.minutes = CONF.minutes;
   }
-  function floorFor(type) { return (CONF[type] || CONF.ladder).floor; }
+  function floorFor(type) { var M = methodOf(type); return M ? M.floor : CONF.ladder.floor; }
   /* routine items with a tempo: `reps` clean passes of the notes, a `rest` ms pause, then +bpm after a bar of count-in. Next session starts `next` above this session's start */
   var RAMP = { reps: 5, bpm: 5, next: 1, rest: 1000 };
   function ruleText(type) {
     if (type === 'routine') return 'A checklist. Work down it in order. An item with a time (2 min) moves on by itself, otherwise press Done. An item with a tempo (80 BPM) starts after a bar of count-in. After ' +
       RAMP.reps + ' clean passes of the notes (' + RAMP.reps + ' x 2 bars for a 2-bar exercise) the click rests a second, then goes up ' + RAMP.bpm + ' BPM after a new bar of count-in. A mistake restarts those passes. When the time is up, the pass you are playing finishes first. Next session it starts ' + RAMP.next + ' BPM above this session\'s start.';
-    var c = CONF[type] || CONF.ladder, s = CFG.step, n;
-    if (type === 'fourway') {
-      n = c.ways.filter(Boolean).length;
-      return 'Each exercise ' + (n === 1 ? 'one way' : n + ' ways') + ' (hand plays the rhythm, foot plays the quarters), ' + c.reps +
-        ' clean reps each. Every exercise clean: +' + s + ' BPM. New lines start at ' + c.floor + ' BPM.';
+    var M = methodOf(type), s = CFG.step, c = CONF.ladder;
+    if (M) {
+      var n = buildSteps(type).length, ways = n === 1 ? 'one way' : n + ' ways', d = M.desc ? M.desc.replace(/\.?$/, '. ') : '';
+      var tail = ' New lines start at ' + M.floor + ' BPM, or at a tempo written in the line.';
+      if (M.comfy) return d + 'Each exercise through ' + ways + '. Stay on each way until it feels comfortable, then press Comfortable, next way. Every exercise done: +' + s + ' BPM.' + tail;
+      return d + 'Each exercise ' + ways + ', ' + M.reps + ' clean reps each. Every exercise clean: +' + s + ' BPM.' + tail;
     }
-    if (type === 'groove') {
-      n = c.ways.filter(Boolean).length;
-      return 'Each exercise through ' + n + (n === 1 ? ' way' : ' ways') + ' of the method (hand pattern x hi-hat foot pattern). Stay on each way until it feels comfortable, then press Comfortable, next way. Every exercise done: +' + s + ' BPM. New lines start at ' + c.floor + ' BPM.';
-    }
-    return c.reps + ' clean reps on each line. The click thins out every 5 reps: all beats, then beat 3 muted, then 2 and 4 muted, then only beat 1. A mistake brings all beats back. Every line clean: +' + s + ' BPM and go round again. New lines start at ' + c.floor + ' BPM.';
+    return c.reps + ' clean reps on each line. The click thins out every 5 reps: all beats, then beat 3 muted, then 2 and 4 muted, then only beat 1. A mistake brings all beats back. Every line clean: +' + s + ' BPM and go round again. New lines start at ' + c.floor + ' BPM, or at a tempo written in the line.';
   }
 
-  /* "18 ways to use this book": as written, then 6 hand patterns x 3 hi-hat foot patterns */
-  var HANDS = ['R hand on cymbal (as written)', 'L hand on cymbal', 'R hand on quarter notes', 'L hand on quarter notes', 'R hand on the "&"', 'L hand on the "&"'];
-  var FEET = ['quarters', 'eighths', 'the "&"'];
-  var WAYS = (function () {
-    var out = [{ label: 'As written' }];
-    HANDS.forEach(function (h, i) {
-      FEET.forEach(function (f, j) {
-        out.push({ label: (i + 1) + 'ABC'.charAt(j) + ': ' + h + ', hi-hat foot on ' + f });
-      });
-    });
-    return out;
-  })();
+  /* ---- methods: ways to play every exercise of a section, written as text on the Methods tab ----
+     # Name, 10 reps, 60 BPM          (or "until comfortable": move on with a button instead of counting reps)
+     A line of description.
+     Way: Label = ops                 one way
+     Ways: group x group              every option of the first group with every option of the second
+       group: Label = ops | Label = ops
+       group: each 16th +BD           one option per 16th (4th, 8th, 16th, triplet): adds that note
+     Ops, separated by commas: "HF xxxx" replaces that instrument with these notes, every bar ("CYM" is the cymbal
+     the exercise uses), "+BD o---" adds notes, "cymbal R" puts the cymbal on the right hand and the drums on the left,
+     "hands L" puts every hand note on the left. A way with no ops only names how to play it. */
+  var BASE = { ladder: 'Ladder', routine: 'Routine' };
+  var LEGACY = { fourway: 'four-way', groove: 'groove' };
+  var METHODS = {}, METHOD_ORDER = [], METHOD_ERRORS = [];
+  var OP_LANE = /^(\+)?(HH|CY|RD|CR|HT|MT|FT|SD|BD|HF|CYM)\s+([xXoOgGrRlLbBfFdDzZ+\-.|]+)$/i;
+  var EACH_RE = /^each\s+(4th|quarter|8th|eighth|16th|sixteenth|triplet)s?\s+\+?(HH|CY|RD|CR|HT|MT|FT|SD|BD|HF)(?:\s+([xXoOgfdz]))?$/i;
 
-  var TYPES = {
-    routine: { label: 'Routine', steps: [{ label: '' }] },
-    ladder: {
-      label: 'Ladder',
-      steps: [{ label: '' }]
-    },
-    fourway: {
-      label: 'Four-way',
-      steps: [
-        { label: 'R hand + R foot' }, { label: 'R hand + L foot' },
-        { label: 'L hand + R foot' }, { label: 'L hand + L foot' }
-      ]
-    },
-    groove: {
-      label: 'Groove',
-      steps: WAYS
+  function methodsText(c) {
+    c = c && typeof c === 'object' ? c : {};
+    var fw = c.fourway || {}, gr = c.groove || {}, lf = clampInt(c.floor, 30, 300, 60);
+    return '# Four-way, ' + clampInt(fw.reps, 1, 100, 10) + ' reps, ' + clampInt(fw.floor, 30, 300, lf) + ' BPM\n' +
+      'Syncopation: the hand plays the rhythm, the foot plays the quarters.\n' +
+      'Ways: hand x foot\n' +
+      '  hand: R hand | L hand\n' +
+      '  foot: R foot | L foot\n\n' +
+      '# Groove, until comfortable, ' + clampInt(gr.floor, 30, 300, lf) + ' BPM\n' +
+      'Carmine: the cymbal hand pattern with each hi-hat foot pattern ("18 ways to use this book").\n' +
+      'Way: As written\n' +
+      'Ways: cymbal hand x hi-hat foot\n' +
+      '  cymbal hand: R hand on cymbal (as written) = cymbal R | L hand on cymbal = cymbal L | R hand on quarter notes = CYM xxxx, cymbal R | L hand on quarter notes = CYM xxxx, cymbal L | R hand on the "&" = CYM -x-x-x-x, cymbal R | L hand on the "&" = CYM -x-x-x-x, cymbal L\n' +
+      '  hi-hat foot: hi-hat foot on quarters = HF xxxx | hi-hat foot on eighths = HF xxxxxxxx | hi-hat foot on the "&" = HF -x-x-x-x\n\n' +
+      '# Kick permutations, 10 reps, 60 BPM\n' +
+      'One more kick, moving through every 16th of the bar, over the exercise as written.\n' +
+      'Ways: kick\n' +
+      '  kick: each 16th +BD\n';
+  }
+
+  function countName(i, n) {
+    var per = n / 4, beat = Math.floor(i / per) + 1, k = i % per;
+    var names = per === 1 ? [''] : (per === 2 ? ['', '&'] : (per === 4 ? ['', 'e', '&', 'a'] : ['', ' tri', ' let']));
+    return beat + names[k];
+  }
+
+  function parseOps(text, err) {
+    var ops = [];
+    String(text || '').split(',').forEach(function (tok) {
+      tok = tok.trim();
+      if (!tok) return;
+      var m = /^(cymbal|hands)\s+([RL])$/i.exec(tok);
+      if (m) { ops.push({ op: 'stick', who: m[1].toLowerCase(), hand: m[2].toUpperCase() }); return; }
+      m = OP_LANE.exec(tok);
+      if (m) {
+        var lane = m[2].toUpperCase(), p = parsePatternLines([{ name: lane === 'CYM' ? 'HH' : lane, text: m[3] }]);
+        if (p.error) { err(p.error); return; }
+        ops.push({ op: m[1] ? 'add' : 'set', lane: lane, bars: p.bars });
+        return;
+      }
+      err('"' + tok + '" is not an op. Use notes like "HF xxxx" or "+BD o---", or "cymbal R", "hands L".');
+    });
+    return ops;
+  }
+
+  function parseOptions(group, text, err) {
+    var m = EACH_RE.exec(text.trim());
+    if (m) {
+      var u = m[1].toLowerCase(), n = /^(4th|quarter)/.test(u) ? 4 : (/^(8th|eighth)/.test(u) ? 8 : (/^trip/.test(u) ? 12 : 16));
+      var out = [];
+      for (var i = 0; i < n; i++) {
+        out.push({ label: group + ' on ' + countName(i, n), ops: [{ op: 'note', lane: m[2].toUpperCase(), sym: m[3] || 'o', pos: Math.round(i * 16 / n * 1000) / 1000, grid: n === 12 ? 4 : n }] });
+      }
+      return out;
     }
-  };
+    return text.split('|').map(function (o) {
+      var eq = o.indexOf('=');
+      var label = (eq >= 0 ? o.slice(0, eq) : o).trim();
+      return { label: label, ops: eq >= 0 ? parseOps(o.slice(eq + 1), err) : [] };
+    }).filter(function (o) { return o.label; });
+  }
+
+  /* Returns {methods: {key: method}, order: [keys], errors: [text]} */
+  function parseMethods(text) {
+    var methods = {}, order = [], errors = [], cur = null, product = null, lineNo = 0;
+    function err(msg) { errors.push('Line ' + lineNo + ': ' + msg); }
+    function finish() {
+      if (!cur) return;
+      cur.blocks.forEach(function (b) {
+        if (b.one) { b.start = cur.ways.length; b.count = 1; cur.ways.push(b.one); return; }
+        var miss = b.groups.filter(function (g) { return !g.options; });
+        if (miss.length) { errors.push(cur.name + ': no options for "' + miss[0].name + '". Add a line "  ' + miss[0].name + ': option | option".'); return; }
+        var combos = [[]];
+        b.groups.forEach(function (g) {
+          var next = [];
+          combos.forEach(function (c) { g.options.forEach(function (o, oi) { next.push(c.concat([{ o: o, i: oi }])); }); });
+          combos = next;
+        });
+        b.start = cur.ways.length;
+        combos.slice(0, 200).forEach(function (c) {
+          var label = c.length === 2 ? (c[0].i + 1) + String.fromCharCode(65 + c[1].i) + ': ' + c[0].o.label + ', ' + c[1].o.label
+            : c.map(function (x) { return x.o.label; }).join(', ');
+          cur.ways.push({ label: label, ops: [].concat.apply([], c.map(function (x) { return x.o.ops; })), at: c.map(function (x) { return x.i; }) });
+        });
+        b.count = cur.ways.length - b.start;
+      });
+      methods[cur.key] = cur;
+      order.push(cur.key);
+      cur = null;
+    }
+    String(text || '').split(/\r?\n/).forEach(function (raw) {
+      lineNo++;
+      var line = raw.replace(/\s+$/, '');
+      var h = /^\s*#+\s*(.*)$/.exec(line);
+      if (h) {
+        finish();
+        product = null;
+        var parts = h[1].split(','), name = parts[0].trim(), key = normKey(name);
+        if (!name) { err('a method needs a name after the #.'); return; }
+        if (BASE[key] || methods[key]) { err('"' + name + '" is already taken. Give the method another name.'); return; }
+        cur = { key: key, name: name, comfy: false, reps: 10, floor: 60, desc: '', ways: [], blocks: [] };
+        parts.slice(1).forEach(function (p) {
+          var r = /(\d+)\s*reps?\b/i.exec(p), b = /(\d{2,3})\s*bpm/i.exec(p);
+          if (/comfortable/i.test(p)) cur.comfy = true;
+          else if (r) cur.reps = clampInt(r[1], 1, 100, 10);
+          else if (b) cur.floor = clampInt(b[1], 30, 300, 60);
+          else if (p.trim()) err('"' + p.trim() + '" is not understood. Use "10 reps", "until comfortable" or "60 BPM".');
+        });
+        return;
+      }
+      if (!line.trim()) return;
+      if (!cur) { err('start a method with a # heading.'); return; }
+      var m = /^\s*way\s*:\s*(.*)$/i.exec(line);
+      if (m) {
+        var one = parseOptions('', m[1], err).slice(0, 1)[0];
+        if (one) cur.blocks.push({ one: { label: one.label, ops: one.ops } });
+        product = null;
+        return;
+      }
+      m = /^\s*ways\s*:\s*(.*)$/i.exec(line);
+      if (m) {
+        product = { groups: m[1].split(/\s+x\s+|\s*×\s*/i).map(function (g) { return { name: g.trim(), options: null }; }).filter(function (g) { return g.name; }) };
+        if (!product.groups.length) { err('name the groups after "Ways:", like "Ways: hand x foot".'); product = null; return; }
+        cur.blocks.push(product);
+        return;
+      }
+      m = /^\s*([^:=|]+):\s*(.+)$/.exec(line);
+      var g = m && product && product.groups.filter(function (x) { return x.name.toLowerCase() === m[1].trim().toLowerCase(); })[0];
+      if (g) { g.options = parseOptions(g.name, m[2], err); return; }
+      if (!cur.desc && !cur.blocks.length) { cur.desc = line.trim(); return; }
+      err('not understood. Expected "Way:", "Ways:" or the options of a group.');
+    });
+    finish();
+    return { methods: methods, order: order, errors: errors };
+  }
+  function setMethods(text) {
+    var r = parseMethods(text);
+    METHODS = r.methods; METHOD_ORDER = r.order; METHOD_ERRORS = r.errors;
+  }
+  function methodOf(type) { return METHODS[type] || METHODS[LEGACY[type]] || null; }
+  function typeLabel(type) { var M = methodOf(type); return BASE[type] || (M ? M.name : 'Ladder'); }
+  function isComfy(type) { var M = methodOf(type); return !!(M && M.comfy); }
 
   function typeFromName(name) {
     if (/hand.?speed|routine|checklist/i.test(name)) return 'routine';
-    if (/sync/i.test(name)) return 'fourway';
-    if (/carmine|groove|fill|rock/i.test(name)) return 'groove';
+    var n = normKey(name), best = null;
+    METHOD_ORDER.forEach(function (k) { if (n.indexOf(k) >= 0 && (!best || k.length > best.length)) best = k; });
+    if (best) return best;
+    if (/sync/i.test(name) && METHODS['four-way']) return 'four-way';
+    if (/carmine|groove|fill|rock/i.test(name) && METHODS.groove) return 'groove';
     return 'ladder';
+  }
+  /* a heading word after a comma that names the type: ladder, routine, or a method */
+  function typeWord(word) {
+    var w = normKey(word);
+    if (w === 'ladder') return 'ladder';
+    if (w === 'routine' || w === 'checklist') return 'routine';
+    if (/^(four-?way|4-?way)$/.test(w) && METHODS['four-way']) return 'four-way';
+    return METHODS[w] ? w : null;
+  }
+
+  /* the notation for one way: replace or add notes, then give the hands their sticking */
+  function applyOps(pat, ops) {
+    if (!ops || !ops.length || (pat && pat.error)) return pat;
+    var src = pat && pat.bars ? pat.bars : null, nb = src ? src.length : 1, cym = null;
+    if (src) src.forEach(function (b) { b.hits.forEach(function (h) { if (!cym && CYM_PART[h.lane]) cym = h.lane; }); });
+    else ops.forEach(function (o) { if (o.bars) nb = Math.max(nb, o.bars.length); });
+    cym = cym || 'HH';
+    function laneOf(o) { return o.lane === 'CYM' ? cym : o.lane; }
+    var set = {};
+    ops.forEach(function (o) { if (o.op === 'set') set[laneOf(o)] = true; });
+    var bars = [];
+    for (var bi = 0; bi < nb; bi++) {
+      var b = src ? src[bi] : { grid: 4, hits: [] }, grid = b.grid, hits = [], at = {};
+      var put = function (h) {
+        var k = h.lane + '@' + h.pos;
+        if (at[k]) return;
+        at[k] = true;
+        hits.push(h);
+      };
+      b.hits.forEach(function (h) { if (!set[h.lane]) put({ lane: h.lane, pos: h.pos, kind: h.kind, acc: !!h.acc, stick: h.stick || null }); });
+      ops.forEach(function (o) {
+        if (o.op === 'note') {
+          var nt = noteOf(o.lane, o.sym);
+          put({ lane: o.lane, pos: o.pos, kind: nt.kind, acc: nt.acc, stick: null });
+          grid = Math.max(grid, o.grid);
+        } else if (o.bars) {
+          var ob = o.bars[bi % o.bars.length], lane = laneOf(o);
+          ob.hits.forEach(function (h) { put({ lane: lane, pos: h.pos, kind: h.kind, acc: !!h.acc, stick: h.stick || null }); });
+          grid = Math.max(grid, ob.grid);
+        }
+      });
+      ops.forEach(function (o) {
+        if (o.op !== 'stick') return;
+        var other = o.hand === 'R' ? 'L' : 'R';
+        hits.forEach(function (h) {
+          if (h.stick || LANE[h.lane].voice !== 'up') return;
+          h.stick = o.who === 'hands' || CYM_HAND[h.lane] ? o.hand : other;
+        });
+      });
+      bars.push({ grid: grid, hits: hits });
+    }
+    return { bars: bars };
+  }
+
+  /* The Methods tab used to keep its ways switched on by number: the switched-off ones, by name */
+  function legacyOff(c) {
+    var off = {}, base = parseMethods(methodsText(null)).methods;
+    [['fourway', 'four-way'], ['groove', 'groove']].forEach(function (p) {
+      var w = c[p[0]] && c[p[0]].ways;
+      if (!Array.isArray(w)) return;
+      var labels = base[p[1]].ways.filter(function (x, i) { return w[i] === false || w[i] === 0; }).map(function (x) { return x.label; });
+      if (labels.length) off[p[1]] = labels;
+    });
+    return off;
   }
 
   var LANE = {
@@ -510,7 +703,23 @@ SD rlrlrlrl</pre>
     BD: { step: 1, voice: 'down' },
     HF: { step: -1, x: true, voice: 'down' }
   };
-  var LANE_RE = /^\s*(HH|CY|RD|CR|HT|MT|FT|SD|BD|HF)\s*[:=]?\s*([xXoOgGrRlLbB\-._|\s]+)$/i;
+  var LANE_RE = /^\s*(HH|CY|RD|CR|HT|MT|FT|SD|BD|HF|ST)\s*[:=]?\s*([xXoOgGrRlLbBfFdDzZ+\-._|\s]+)$/i;
+  var CYM = { HH: 1, CY: 1, RD: 1 };
+  /* one note symbol, as in GrooveScribe: capitals are accented.
+     o hit (open on HH, CY, RD), x hit (cross-stick on SD), g ghost, f flam, d drag, z buzz, + closed hi-hat, r l b sticking (b: both hands) */
+  function noteOf(lane, ch) {
+    var c = ch.toLowerCase(), acc = ch !== c && c !== 'g';
+    var kind = 'hit', stick = null;
+    if (c === 'g') kind = 'ghost';
+    else if (c === 'f') kind = 'flam';
+    else if (c === 'd') kind = 'drag';
+    else if (c === 'z') kind = 'buzz';
+    else if (c === '+') kind = CYM[lane] ? 'closed' : 'hit';
+    else if (c === 'o') kind = CYM[lane] ? 'open' : 'hit';
+    else if (c === 'x') kind = lane === 'SD' ? 'xs' : 'hit';
+    else if (c === 'r' || c === 'l' || c === 'b') stick = c.toUpperCase();
+    return { kind: kind, acc: acc, stick: stick };
+  }
   var BARE_RE = /^[rlbRLB\-._|\s]{4,}$/;
   var TAIL_RE = /^(.*\S)\s+([rlbRLB\-._|]{4,})$/;
 
@@ -537,24 +746,171 @@ SD rlrlrlrl</pre>
     if (!nBars) return { error: 'No notes found.' };
     if (nBars > 16) return { error: 'Too many bars (max 16).' };
     var bars = [];
+    function posOf(i, len) { return Math.round(i * 16 / len * 1000) / 1000; }
     for (var b = 0; b < nBars; b++) {
       var grid = 4;
       names.forEach(function (n) { var s = lanes[n][b]; var g = s ? (s.length === 12 || s.length === 24 ? 4 : s.length) : 0; if (g > grid) grid = g; });
       var bar = { grid: grid, hits: [] };
       names.forEach(function (n) {
         var s = lanes[n][b];
-        if (!s) return;
+        if (!s || n === 'ST') return;
         for (var i = 0; i < s.length; i++) {
-          var c = s.charAt(i).toLowerCase();
-          if (c === '-' || c === '.') continue;
-          var kind = c === 'g' ? 'ghost' : (c === 'o' && (n === 'HH' || n === 'CY' || n === 'RD') ? 'open' : 'hit');
-          var stick = (c === 'r' || c === 'l' || c === 'b') ? c.toUpperCase() : null;
-          bar.hits.push({ lane: n, pos: Math.round(i * 16 / s.length * 1000) / 1000, kind: kind, stick: stick });
+          var ch = s.charAt(i);
+          if (ch === '-' || ch === '.') continue;
+          var nt = noteOf(n, ch);
+          bar.hits.push({ lane: n, pos: posOf(i, s.length), kind: nt.kind, acc: nt.acc, stick: nt.stick });
         }
       });
+      /* ST: sticking only, put under the hand note at the same place (snare and toms first, then cymbals) */
+      var st = lanes.ST && lanes.ST[b];
+      if (st) {
+        for (var j = 0; j < st.length; j++) {
+          var sc = st.charAt(j).toUpperCase();
+          if ('RLB'.indexOf(sc) < 0) continue;
+          var p = posOf(j, st.length), cands = bar.hits.filter(function (h) { return Math.abs(h.pos - p) < 0.01 && LANE[h.lane].voice === 'up'; });
+          cands.sort(function (x, y) { return (CYM_HAND[x.lane] ? 1 : 0) - (CYM_HAND[y.lane] ? 1 : 0); });
+          if (cands.length && !cands.some(function (h) { return h.stick; })) cands[0].stick = sc;
+        }
+      }
       bars.push(bar);
     }
     return { bars: bars };
+  }
+
+  /* ---- GrooveScribe-format links: Beat Mapper (beats.drumbeatsonline.com) writes them, mikeslessons.com/groove reads the same ---- */
+  var GS_RE = /https?:\/\/\S*\?\S*\b(?:H|S|K|T[1-4])=(?:\||%7C)/i;
+  function hash4(s) {
+    var h = 0;
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return ('000' + (h % 65536).toString(16)).slice(-4);
+  }
+  function gsQuery(url) {
+    var q = {}, i = url.indexOf('?');
+    url.slice(i + 1).split('#')[0].split('&').forEach(function (kv) {
+      var k = kv.indexOf('=');
+      if (k < 1) return;
+      var v = kv.slice(k + 1);
+      try { v = decodeURIComponent(v); } catch (e) { /* keep as written */ }
+      q[kv.slice(0, k).toLowerCase()] = v;
+    });
+    return q;
+  }
+  /* each GrooveScribe line, symbol by symbol, to [lane, symbol] (null: dropped) */
+  var GS_MAP = {
+    h: function (c) {
+      if (c === 'x' || c === 'X' || c === 'o' || c === '+') return ['HH', c];
+      if (c === 'r' || c === 'b') return ['RD', 'x'];
+      if (c === 'R' || c === 'B') return ['RD', 'X'];
+      if (c === 'c') return ['CR', 'x'];
+      if (c === 'm' || c === 's') return ['CY', 'x'];
+      return null;
+    },
+    s: function (c) { return c === 'b' ? ['SD', 'z'] : (/^[oOgxXfd]$/.test(c) ? ['SD', c === 'f' ? 'F' : c] : null); },
+    k: function (c) { return c === 'o' ? ['BD', 'o'] : (c === 'X' || c === 'x' ? ['HF', 'x'] : (c === '+' ? [['BD', 'o'], ['HF', 'x']] : null)); },
+    t1: function (c) { return c === '-' ? null : ['HT', 'o']; },
+    t2: function (c) { return c === '-' ? null : ['MT', 'o']; },
+    t3: function (c) { return c === '-' ? null : ['FT', 'o']; },
+    t4: function (c) { return c === '-' ? null : ['FT', 'o']; },
+    stickings: function (c) { return /^[RLB]$/i.test(c) ? ['ST', c.toLowerCase()] : null; }
+  };
+  /* Returns {rows, title, tempo} or {error} */
+  function gsToRows(url) {
+    var q = gsQuery(url);
+    if (q.timesig && q.timesig !== '4/4') return { error: 'Only 4/4 links can be read (this one is ' + q.timesig + ').' };
+    var div = parseInt(q.div || '16', 10);
+    if ([4, 8, 16, 12, 24, 32, 48].indexOf(div) < 0) return { error: 'Division ' + div + ' is not supported. Use 4, 8, 16, 12, 24, 32 or 48.' };
+    var lanes = {}, order = [];
+    Object.keys(GS_MAP).forEach(function (k) {
+      if (!q[k]) return;
+      q[k].split('|').filter(function (s) { return s.length; }).forEach(function (bar, bi) {
+        for (var i = 0; i < bar.length; i++) {
+          var r = GS_MAP[k](bar.charAt(i));
+          if (!r) continue;
+          (typeof r[0] === 'string' ? [r] : r).forEach(function (x) {
+            if (!lanes[x[0]]) { lanes[x[0]] = []; order.push(x[0]); }
+            var L = lanes[x[0]];
+            while (L.length <= bi) L.push(new Array(bar.length + 1).join('-').split(''));
+            L[bi][i] = x[1];
+          });
+        }
+      });
+    });
+    var nb = 0;
+    order.forEach(function (n) { nb = Math.max(nb, lanes[n].length); });
+    order.forEach(function (n) { while (lanes[n].length < nb) lanes[n].push(new Array(div + 1).join('-').split('')); });
+    /* 32 and 48 steps a bar: write each bar with the fewest steps that hold its notes (4, 8, 16, 12 or 24) */
+    if (div === 32 || div === 48) {
+      for (var bi = 0; bi < nb; bi++) {
+        var len = 0, used = [];
+        order.forEach(function (n) { var b = lanes[n][bi]; len = Math.max(len, b.length); b.forEach(function (c, i) { if (c !== '-') used.push(i); }); });
+        var fit = [4, 8, 16, 12, 24].filter(function (m) { return used.every(function (i) { return (i * m) % len === 0; }); })[0];
+        if (!fit) return { error: 'Bar ' + (bi + 1) + ' has notes this app can\'t write (32nd notes, or 16ths and triplets in the same bar).' };
+        order.forEach(function (n) {
+          var b = lanes[n][bi], out = new Array(fit + 1).join('-').split('');
+          b.forEach(function (c, i) { if (c !== '-') out[i * fit / len] = c; });
+          lanes[n][bi] = out;
+        });
+      }
+    }
+    var rows = order.map(function (n) {
+      return { name: n, text: lanes[n].map(function (b) { return b.join(''); }).join('|') };
+    });
+    if (!rows.length) return { error: 'The link has no notes.' };
+    var tempo = parseInt(q.tempo, 10);
+    return { rows: rows, title: (q.title || '').replace(/\+/g, ' ').trim(), tempo: tempo >= 20 && tempo <= 400 ? tempo : 0 };
+  }
+
+  /* the pattern as a GrooveScribe-format link ('' if a note falls off the 48-a-bar grid, which the parser never makes) */
+  var GS_HAND = { HH: 'H', CY: 'H', RD: 'H', CR: 'H', SD: 'S', HT: 'T1', MT: 'T2', FT: 'T4', BD: 'K', HF: 'K' };
+  function gsSym(h) {
+    var a = h.acc;
+    switch (h.lane) {
+      case 'HH': return h.kind === 'open' ? 'o' : (h.kind === 'closed' ? '+' : (a ? 'X' : 'x'));
+      case 'CY': case 'RD': return a ? 'R' : 'r';
+      case 'CR': return 'c';
+      case 'SD': return { ghost: 'g', xs: 'x', flam: 'f', drag: 'd', buzz: 'b' }[h.kind] || (a ? 'O' : 'o');
+      case 'BD': return 'o';
+      case 'HF': return 'X';
+      default: return 'o';
+    }
+  }
+  var GS_RANK = { c: 3, R: 2, r: 2, X: 1, o: 1 };
+  function gsLink(pat, title, tempo) {
+    if (!pat || !pat.bars) return '';
+    var trip = 0, straight = 4;
+    pat.bars.forEach(function (b) {
+      for (var t = 0; t < 4; t++) trip = Math.max(trip, tripOf(b, t));
+      straight = Math.max(straight, b.grid);
+      b.hits.forEach(function (h) {
+        var p = h.pos % 4;
+        if (Math.abs(p - Math.round(p)) < 0.01) straight = Math.max(straight, Math.round(p) % 2 ? 16 : (Math.round(p) % 4 ? 8 : 4));
+      });
+    });
+    var div = trip ? (trip === 6 ? 24 : 12) : straight;
+    /* triplets and straight notes in one groove: 48 a bar holds both (Beat Mapper draws each bar right) */
+    if (pat.bars.some(function (b) { return b.hits.some(function (h) { var q = h.pos * div / 16; return Math.abs(q - Math.round(q)) > 0.02; }); })) div = 48;
+    var lines = {}, nb = pat.bars.length, ok = true;
+    ['H', 'S', 'K', 'T1', 'T2', 'T4', 'Stickings'].forEach(function (k) { lines[k] = []; for (var i = 0; i < nb; i++) lines[k].push(new Array(div + 1).join('-').split('')); });
+    var used = {};
+    pat.bars.forEach(function (b, bi) {
+      b.hits.forEach(function (h) {
+        var slot = h.pos * div / 16;
+        if (Math.abs(slot - Math.round(slot)) > 0.02) { ok = false; return; }
+        slot = Math.round(slot);
+        var k = GS_HAND[h.lane], c = gsSym(h), cur = lines[k][bi][slot];
+        if (k === 'K' && cur !== '-' && cur !== c) c = '+';
+        else if (k === 'H' && cur !== '-' && (GS_RANK[cur] || 0) > (GS_RANK[c] || 0)) c = cur;
+        lines[k][bi][slot] = c;
+        used[k] = true;
+        if (h.stick) { lines.Stickings[bi][slot] = h.stick; used.Stickings = true; }
+      });
+    });
+    if (!ok) return '';
+    function line(k) { return '|' + lines[k].map(function (b) { return b.join(''); }).join('|') + '|'; }
+    var url = 'https://beats.drumbeatsonline.com/?TimeSig=4/4&Div=' + div + (title ? '&Title=' + encodeURIComponent(title) : '') +
+      (tempo ? '&Tempo=' + tempo : '') + '&Measures=' + nb + '&H=' + line('H') + '&S=' + line('S') + '&K=' + line('K');
+    ['T1', 'T2', 'T4', 'Stickings'].forEach(function (k) { if (used[k]) url += '&' + k + '=' + line(k); });
+    return url;
   }
 
   /* Returns sections: [{name, minutes, type, items:[{label,key,pattern}]}] */
@@ -569,17 +925,26 @@ SD rlrlrlrl</pre>
         var t = head[1], mins = CFG.minutes, type = null;
         var mm = /(\d{1,3})\s*min\w*/i.exec(t);
         if (mm) { mins = Math.max(1, Math.min(120, parseInt(mm[1], 10))); t = t.replace(mm[0], ''); }
-        var tm = /\b(ladder|four-?way|4-?way|groove|routine|checklist)\b/i.exec(t);
-        if (tm) {
-          var w = tm[1].toLowerCase();
-          type = w === 'ladder' ? 'ladder' : (w === 'groove' ? 'groove' : (/routine|checklist/.test(w) ? 'routine' : 'fourway'));
-          t = t.replace(tm[0], '');
-        }
+        var parts = t.split(','), keep = [parts[0]];
+        parts.slice(1).forEach(function (p) { var ty = typeWord(p); if (ty && !type) type = ty; else keep.push(p); });
+        t = keep.join(',');
         t = t.replace(/[\s,;:()\-]+$/g, '').replace(/^[\s,;:()\-]+/g, '').trim();
         var name = t || 'Exercises';
         sec = { name: name, minutes: mins, fixedMins: !!mm, type: type || typeFromName(name), items: [] };
         sections.push(sec);
         cur = null;
+        return;
+      }
+      /* a GrooveScribe link: the notes of the exercise above it, or its own exercise (named by the text before it, or the link's title) */
+      if (GS_RE.test(raw)) {
+        var ui = raw.search(/https?:\/\//), g = gsToRows(raw.slice(ui).split(/\s/)[0]);
+        var before = raw.slice(0, ui).replace(/[\s:,;\-]+$/, '').trim();
+        if (before || !cur || cur.rows.length || cur.gsError) {
+          var lbl = before || g.title || 'Groove ' + hash4(raw.slice(ui));
+          if (!before && sec && sec.type === 'routine' && g.tempo && !/\d\s*bpm/i.test(lbl)) lbl += ' ' + g.tempo + ' BPM';
+          if (!addItem(lbl)) return;
+        }
+        if (g.error) cur.gsError = g.error; else cur.rows = cur.rows.concat(g.rows);
         return;
       }
       var alt = raw.replace(/([rl])\/([rl])/gi, 'b');
@@ -598,17 +963,19 @@ SD rlrlrlrl</pre>
         var tm2 = TAIL_RE.exec(raw);
         if (tm2 && /[rlb]/i.test(tm2[2]) && !/^\s*#/.test(raw)) { rawLine = tm2[1]; tailPat = tm2[2]; }
       }
-      raw = rawLine;
+      if (addItem(rawLine) && tailPat) cur.rows.push({ name: 'SD', text: tailPat });
+    });
+    function addItem(raw) {
       var label = raw.replace(/^\s*(?:[-*•]\s+|\d+[.)]\s+)/, '').replace(/\s+/g, ' ').trim();
-      if (!label) return;
+      if (!label) return null;
       var key = normKey(label);
-      if (seen[key]) { cur = null; return; }
+      if (seen[key]) { cur = null; return null; }
       seen[key] = true;
       ensure();
       cur = { label: label, key: key, pattern: null, rows: [] };
-      if (tailPat) cur.rows.push({ name: 'SD', text: tailPat });
       sec.items.push(cur);
-    });
+      return cur;
+    }
     sections.forEach(function (s) {
       if (s.type === 'routine' && !s.fixedMins) {
         var tot = 0, all = s.items.length > 0;
@@ -616,24 +983,33 @@ SD rlrlrlrl</pre>
         if (all) s.minutes = Math.max(1, Math.ceil(tot / 60));
       }
       s.items.forEach(function (it) {
-        if (it.rows.length) it.pattern = parsePatternLines(it.rows);
+        if (it.gsError) it.pattern = { error: it.gsError };
+        else if (it.rows.length) it.pattern = parsePatternLines(it.rows);
         delete it.rows;
+        delete it.gsError;
       });
     });
     return sections.filter(function (s) { return s.items.length; });
   }
 
-  function startTempo(last, type) {
-    var floor = floorFor(type);
+  /* a tempo written in an exercise line ("50 BPM") is where it starts, and the lowest it comes back to */
+  function lineTempo(label) {
+    var m = /(\d{2,3})\s*bpm/i.exec(label || '');
+    var t = m ? parseInt(m[1], 10) : 0;
+    return t >= 30 && t <= 300 ? t : 0;
+  }
+  function startTempo(last, type, from) {
+    var floor = from || floorFor(type);
     return last == null ? floor : Math.max(floor, last - CFG.drop);
   }
 
   function buildSteps(type) {
-    var T = TYPES[type] || TYPES.ladder, c = CONF[type] || CONF.ladder, out = [];
-    T.steps.forEach(function (s, i) {
-      if (!c.ways || c.ways[i] !== false) out.push({ label: s.label, reps: c.reps, mask: s.mask || null, code: i });
-    });
-    if (!out.length) out.push({ label: T.steps[0].label, reps: c.reps, mask: null, code: 0 });
+    var M = methodOf(type);
+    if (!M) return [{ label: '', reps: CONF.ladder.reps, mask: null, ops: null }];
+    var off = (CONF.off && CONF.off[M.key]) || [];
+    var out = M.ways.filter(function (w) { return off.indexOf(w.label) < 0; })
+      .map(function (w) { return { label: w.label, reps: M.reps, mask: null, ops: w.ops }; });
+    if (!out.length) out.push({ label: M.ways.length ? M.ways[0].label : '', reps: M.reps, mask: null, ops: M.ways.length ? M.ways[0].ops : null });
     return out;
   }
 
@@ -665,7 +1041,7 @@ SD rlrlrlrl</pre>
   }
 
   function newSession(section, memory) {
-    var type = TYPES[section.type] ? section.type : 'ladder';
+    var type = BASE[section.type] || methodOf(section.type) ? section.type : 'ladder';
     var minutes = section.minutes;
     if (type === 'routine') {
       var tot = 0, all = section.items.length > 0;
@@ -678,7 +1054,7 @@ SD rlrlrlrl</pre>
       minutes: minutes,
       lines: section.items.map(function (it) {
         var m = memory[it.key];
-        var t = startTempo(m && m.last != null ? m.last : null, type);
+        var from = lineTempo(it.label), t = startTempo(m && m.last != null ? m.last : null, type, from);
         if (type === 'routine') {
           var sp = splitItem(it.label), t0 = routineStart(sp, m);
           return { label: it.label, name: sp.name, detail: sp.detail, key: it.key, pattern: it.pattern || null, steps: buildSteps('ladder'),
@@ -687,7 +1063,7 @@ SD rlrlrlrl</pre>
         return {
           label: it.label, key: it.key, pattern: it.pattern || null,
           steps: buildSteps(type), step: 0,
-          start: t, tempo: t, count: 0, done: false, top: null, mistakes: 0, slips: {}
+          start: t, tempo: t, from: from, count: 0, done: false, top: null, mistakes: 0, slips: {}
         };
       }),
       active: 0, round: 1, elapsed: 0, running: false, finished: false, reason: ''
@@ -722,7 +1098,7 @@ SD rlrlrlrl</pre>
   function addRep(s, n) {
     var l = s.lines[s.active];
     if (l.done) return null;
-    if (s.type === 'groove') { l.count += n; return null; }
+    if (isComfy(s.type)) { l.count += n; return null; }
     var st = curStep(l);
     l.count = Math.min(st.reps, l.count + n);
     if (l.count < st.reps) return null;
@@ -753,7 +1129,7 @@ SD rlrlrlrl</pre>
       var slips = Object.keys(l.slips || {}).map(function (k) {
         return { label: l.steps[k].label, n: l.slips[k] };
       }).filter(function (x) { return x.label; });
-      return { label: l.label, key: l.key, start: l.start, top: l.top, mistakes: l.mistakes, slips: slips };
+      return { label: l.label, key: l.key, start: l.start, top: l.top, from: l.from || 0, mistakes: l.mistakes, slips: slips };
     });
   }
 
@@ -761,44 +1137,15 @@ SD rlrlrlrl</pre>
     res.forEach(function (r) {
       if (r.top == null) return;
       if (r.ramp) memory[r.key] = { label: r.label, start: r.start, last: r.top, type: 'routine' };
-      else if (!r.routine) memory[r.key] = { label: r.label, last: r.top, type: type || 'ladder' };
+      else if (!r.routine) {
+        memory[r.key] = { label: r.label, last: r.top, type: type || 'ladder' };
+        if (r.from) memory[r.key].from = r.from;
+      }
     });
   }
 
-  /* The notation for way w (0 = as written, 1..18 = hand pattern x hi-hat foot pattern).
-     Hand pattern: cymbal hand on the written part, on quarters or on the "&"; odd patterns
-     are played backwards (left hand on the cymbal). The hi-hat foot part is added or replaced. */
   var CYM_HAND = { HH: 1, CY: 1, RD: 1, CR: 1 };
   var CYM_PART = { HH: 1, CY: 1, RD: 1 };
-  function applyWay(pat, w) {
-    if (!pat || pat.error || !w) return pat;
-    var h = Math.floor((w - 1) / 3), f = (w - 1) % 3;
-    var cymHand = h % 2 === 0 ? 'R' : 'L', otherHand = cymHand === 'R' ? 'L' : 'R';
-    var mode = h < 2 ? 'written' : (h < 4 ? 'quarters' : 'and');
-    var footPos = f === 0 ? [0, 4, 8, 12] : (f === 1 ? [0, 2, 4, 6, 8, 10, 12, 14] : [2, 6, 10, 14]);
-    var handPos = mode === 'quarters' ? [0, 4, 8, 12] : [2, 6, 10, 14];
-    var lane = null;
-    pat.bars.forEach(function (b) { b.hits.forEach(function (x) { if (!lane && CYM_PART[x.lane]) lane = x.lane; }); });
-    return {
-      bars: pat.bars.map(function (b) {
-        var hits = [];
-        b.hits.forEach(function (x) {
-          if (x.lane === 'HF') return;
-          if (CYM_PART[x.lane] && mode !== 'written') return;
-          var c = { lane: x.lane, pos: x.pos, kind: x.kind, stick: x.stick || null };
-          if (!c.stick && LANE[c.lane].voice === 'up') c.stick = CYM_HAND[c.lane] ? cymHand : otherHand;
-          hits.push(c);
-        });
-        if (lane && mode !== 'written') {
-          handPos.forEach(function (p) { hits.push({ lane: lane, pos: p, kind: 'hit', stick: cymHand }); });
-        }
-        footPos.forEach(function (p) { hits.push({ lane: 'HF', pos: p, kind: 'hit', stick: null }); });
-        var grid = b.grid;
-        if (f !== 0 || mode === 'and') grid = Math.max(grid, 8);
-        return { grid: grid, hits: hits };
-      })
-    };
-  }
 
   /* ---- notation ---- */
   function decompose(n) {
@@ -885,6 +1232,22 @@ SD rlrlrlrl</pre>
     return ev;
   }
 
+  /* Hands (up) and feet (down) are written apart, but a rest only shows where nothing is played:
+     a rest under a note of the other voice is hidden, and when both are silent only the hands' rest shows. */
+  function restsShown(up, down) {
+    function spans(evs) { if (evs) evs.forEach(function (e, i) { e.end = i + 1 < evs.length ? evs[i + 1].p : 4; }); }
+    function has(evs, type, a, b, cover) {
+      return !!evs && evs.some(function (e) {
+        if (e.type !== type || e.hide) return false;
+        return cover ? e.p <= a + 1e-6 && e.end >= b - 1e-6 : e.p < b - 1e-6 && e.end > a + 1e-6;
+      });
+    }
+    spans(up); spans(down);
+    if (up) up.forEach(function (e) { if (e.type === 'rest' && has(down, 'note', e.p, e.end)) e.hide = true; });
+    if (down) down.forEach(function (e) { if (e.type === 'rest' && (has(up, 'note', e.p, e.end) || has(up, 'rest', e.p, e.end, true))) e.hide = true; });
+    return { up: up, down: down };
+  }
+
   function f1(n) { return Math.round(n * 10) / 10; }
 
   function restSvg(dur, x, y) {
@@ -900,48 +1263,79 @@ SD rlrlrlrl</pre>
     return s;
   }
 
+  /* a small grace note at gx, stem up; slash: the flam's stroke through the stem */
+  function graceSvg(gx, y, slash) {
+    var s = '<ellipse cx="' + f1(gx) + '" cy="' + f1(y) + '" rx="3.1" ry="2.2" transform="rotate(-20 ' + f1(gx) + ' ' + f1(y) + ')" fill="currentColor"/>' +
+      '<line x1="' + f1(gx + 3) + '" x2="' + f1(gx + 3) + '" y1="' + f1(y) + '" y2="' + f1(y - 17) + '" stroke="currentColor" stroke-width="1"/>';
+    if (slash) s += '<line x1="' + f1(gx - 1) + '" x2="' + f1(gx + 7) + '" y1="' + f1(y - 6) + '" y2="' + f1(y - 13) + '" stroke="currentColor" stroke-width="1"/>' +
+      '<path d="M' + f1(gx + 3) + ' ' + f1(y - 17) + ' q1 5 5 7" fill="none" stroke="currentColor" stroke-width="1"/>';
+    return s;
+  }
+
   function headSvg(x, y, h) {
-    var L = LANE[h.lane], s = '';
+    var L = LANE[h.lane], s = '', up = L.voice === 'up';
     if (L.ledger) s += '<line class="bl" x1="' + f1(x - 8) + '" x2="' + f1(x + 8) + '" y1="' + f1(y) + '" y2="' + f1(y) + '"/>';
-    if (L.x) {
+    if (L.x || h.kind === 'xs') {
       s += '<path d="M' + f1(x - 4) + ' ' + f1(y - 4) + ' L' + f1(x + 4) + ' ' + f1(y + 4) + ' M' + f1(x + 4) + ' ' + f1(y - 4) + ' L' + f1(x - 4) + ' ' + f1(y + 4) +
         '" fill="none" stroke="currentColor" stroke-width="1.7"/>';
+      if (h.kind === 'xs') s += '<circle cx="' + f1(x) + '" cy="' + f1(y) + '" r="6.2" fill="none" stroke="currentColor" stroke-width="1.1"/>';
       if (h.kind === 'open') s += '<circle cx="' + f1(x) + '" cy="' + f1(y - 9) + '" r="2.8" fill="none" stroke="currentColor" stroke-width="1.3"/>';
+      if (h.kind === 'closed') s += '<path d="M' + f1(x - 3.2) + ' ' + f1(y - 9) + ' H' + f1(x + 3.2) + ' M' + f1(x) + ' ' + f1(y - 12.2) + ' V' + f1(y - 5.8) + '" fill="none" stroke="currentColor" stroke-width="1.4"/>';
     } else {
-      s += '<ellipse cx="' + f1(x) + '" cy="' + f1(y) + '" rx="5.2" ry="3.7" transform="rotate(-20 ' + f1(x) + ' ' + f1(y) + ')" fill="currentColor"/>';
+      var gh = h.kind === 'ghost';
+      s += '<ellipse cx="' + f1(x) + '" cy="' + f1(y) + '" rx="' + (gh ? 3.9 : 5.2) + '" ry="' + (gh ? 2.8 : 3.7) + '" transform="rotate(-20 ' + f1(x) + ' ' + f1(y) + ')" fill="currentColor"/>';
+    }
+    if (h.kind === 'flam') s += graceSvg(x - 11, y, true);
+    if (h.kind === 'drag') {
+      s += graceSvg(x - 16, y, false) + graceSvg(x - 10, y, false) +
+        '<line x1="' + f1(x - 13) + '" x2="' + f1(x - 7) + '" y1="' + f1(y - 17) + '" y2="' + f1(y - 17) + '" stroke="currentColor" stroke-width="2"/>' +
+        '<line x1="' + f1(x - 13) + '" x2="' + f1(x - 7) + '" y1="' + f1(y - 14) + '" y2="' + f1(y - 14) + '" stroke="currentColor" stroke-width="2"/>';
+    }
+    /* buzz roll: a z through the stem, between the head and the beam */
+    if (h.kind === 'buzz') {
+      var zx = up ? x + 5 : x - 5, zy = up ? y - 13 : y + 13;
+      s += '<path d="M' + f1(zx - 3) + ' ' + f1(zy - 2.5) + ' H' + f1(zx + 3) + ' L' + f1(zx - 3) + ' ' + f1(zy + 2.5) + ' H' + f1(zx + 3) + '" fill="none" stroke="currentColor" stroke-width="1.4"/>';
     }
     if (h.kind === 'ghost') {
-      s += '<path d="M' + f1(x - 9) + ' ' + f1(y - 5) + ' Q' + f1(x - 13) + ' ' + f1(y) + ' ' + f1(x - 9) + ' ' + f1(y + 5) + '" fill="none" stroke="currentColor" stroke-width="1.2"/>' +
-        '<path d="M' + f1(x + 9) + ' ' + f1(y - 5) + ' Q' + f1(x + 13) + ' ' + f1(y) + ' ' + f1(x + 9) + ' ' + f1(y + 5) + '" fill="none" stroke="currentColor" stroke-width="1.2"/>';
+      s += '<path d="M' + f1(x - 5.2) + ' ' + f1(y - 4.3) + ' Q' + f1(x - 7.6) + ' ' + f1(y) + ' ' + f1(x - 5.2) + ' ' + f1(y + 4.3) + '" fill="none" stroke="currentColor" stroke-width="1.2"/>' +
+        '<path d="M' + f1(x + 5.2) + ' ' + f1(y - 4.3) + ' Q' + f1(x + 7.6) + ' ' + f1(y) + ' ' + f1(x + 5.2) + ' ' + f1(y + 4.3) + '" fill="none" stroke="currentColor" stroke-width="1.2"/>';
     }
     return s;
   }
 
   function renderStaff(pat, width) {
     var bars = pat.bars, nB = bars.length;
-    var hasUp = false, hasDown = false, hasCR = false, hasStick = false, stickRows = 0, minGap = 16;
+    var hasUp = false, hasDown = false, hasCR = false, hasStick = false, stickRows = 0, minGap = 16, accUp = false, accDown = false, grace = false;
     bars.forEach(function (b) {
       var seen = {}, sp = {};
       b.hits.forEach(function (h) {
         if (h.stick) { hasStick = true; var spp = (sp[h.pos] = sp[h.pos] || {}); if (h.stick === 'B') { spp.R = 1; spp.L = 1; } else spp[h.stick] = 1; }
-        if (LANE[h.lane].voice === 'up') hasUp = true; else hasDown = true;
+        if (LANE[h.lane].voice === 'up') { hasUp = true; if (h.acc) accUp = true; } else { hasDown = true; if (h.acc) accDown = true; }
+
         if (h.lane === 'CR') hasCR = true;
         seen[h.pos] = 1;
       });
       Object.keys(sp).forEach(function (k) { stickRows = Math.max(stickRows, Object.keys(sp[k]).length); });
       var arr = Object.keys(seen).map(Number).sort(function (a, c) { return a - c; });
       for (var i = 1; i < arr.length; i++) minGap = Math.min(minGap, arr[i] - arr[i - 1]);
+      /* a flam or drag right after a 16th needs room for its grace notes */
+      b.hits.forEach(function (h) {
+        if (h.kind !== 'flam' && h.kind !== 'drag') return;
+        var k = arr.indexOf(h.pos);
+        if (k > 0 && arr[k] - arr[k - 1] < 2) grace = true;
+      });
     });
     var anyTrip = false;
     bars.forEach(function (b) { for (var tb = 0; tb < 4; tb++) if (tripOf(b, tb)) anyTrip = true; });
     var left = 26, pad = 14;
     var avail = Math.max(170, width - left - 4);
-    var minBar = Math.max(130, 28 + 176 / minGap);
+    var minBar = Math.max(130, 28 + (grace ? 264 : 176) / minGap);
     var perRow = Math.max(1, Math.min(nB, Math.floor(avail / minBar)));
-    var barW = Math.min(avail / perRow, 340);
+    var barW = Math.min(avail / perRow, grace ? 420 : 340);
     var uW = (barW - 2 * pad) / 16;
-    var topM = (hasUp ? (hasCR ? 50 : 46) : 16) + (anyTrip && hasUp ? 16 : 0);
-    var botM = (hasDown ? 58 : 26) + (hasStick ? 14 * stickRows + 2 : 0) + (anyTrip && hasDown ? 16 : 0);
+    var aU = accUp ? 12 : 0, aD = accDown ? 12 : 0;
+    var topM = (hasUp ? (hasCR ? 50 : 46) : 16) + (anyTrip && hasUp ? 16 : 0) + aU;
+    var botM = (hasDown ? 58 : 26) + (hasStick ? 14 * stickRows + 2 : 0) + (anyTrip && hasDown ? 16 : 0) + aD;
     var rowH = topM + 40 + botM;
     var rows = Math.ceil(nB / perRow);
     var W = Math.round(left + perRow * barW + 4), H = rows * rowH + 4;
@@ -959,6 +1353,11 @@ SD rlrlrlrl</pre>
         var sxs = run.map(function (n) { return up ? n.x + 5 : n.x - 5; });
         run.forEach(function (n, i) {
           out.push('<line x1="' + f1(sxs[i]) + '" x2="' + f1(sxs[i]) + '" y1="' + f1(up ? n.bot : n.top) + '" y2="' + f1(beamY) + '" stroke="currentColor" stroke-width="1.5"/>');
+          /* accent: a > past the end of the stem */
+          if (n.acc) {
+            var ay = up ? beamY - 8 : beamY + 8;
+            out.push('<path d="M' + f1(sxs[i] - 5) + ' ' + f1(ay - 3) + ' L' + f1(sxs[i] + 5) + ' ' + f1(ay) + ' L' + f1(sxs[i] - 5) + ' ' + f1(ay + 3) + '" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>');
+          }
         });
         if (run.length > 1) {
           out.push('<line x1="' + f1(sxs[0]) + '" x2="' + f1(sxs[sxs.length - 1]) + '" y1="' + f1(beamY) + '" y2="' + f1(beamY) + '" stroke="currentColor" stroke-width="3.6"/>');
@@ -984,21 +1383,25 @@ SD rlrlrlrl</pre>
         }
       }
 
+      var EV = [0, 1, 2, 3].map(function (beat) {
+        return restsShown(hasUp ? buildVoice(bar, 'up', beat) : null, hasDown ? buildVoice(bar, 'down', beat) : null);
+      });
       ['up', 'down'].forEach(function (voice) {
         if (voice === 'up' ? !hasUp : !hasDown) return;
         for (var beat = 0; beat < 4; beat++) {
           var run = [], tn = tripOf(bar, beat), tTop = 999, tBot = -999;
-          var evs = buildVoice(bar, voice, beat);
+          var evs = EV[beat][voice];
           evs.forEach(function (e) {
             var x = X(beat * 4 + e.p);
             if (e.type === 'rest') {
+              if (e.hide) return;
               if (run.length) { drawRun(run, voice); run = []; }
               out.push(restSvg(e.dur, x, voice === 'up' ? yB - 30 : yB - 10));
               return;
             }
             var heads = e.heads.slice().sort(function (a, b) { return LANE[a.lane].step - LANE[b.lane].step; });
             var ys = heads.map(function (h) { return Y(LANE[h.lane].step); });
-            var n = { x: x, dur: e.dur, top: Math.min.apply(null, ys), bot: Math.max.apply(null, ys) };
+            var n = { x: x, dur: e.dur, top: Math.min.apply(null, ys), bot: Math.max.apply(null, ys), acc: heads.some(function (h) { return h.acc; }) };
             tTop = Math.min(tTop, n.top); tBot = Math.max(tBot, n.bot);
             heads.forEach(function (h, i) { out.push(headSvg(x, ys[i], h)); });
             if (e.dur >= 4) {
@@ -1011,7 +1414,7 @@ SD rlrlrlrl</pre>
           if (run.length) drawRun(run, voice);
           if (tn && !evs.noBracket && tTop < 999) {
             var up2 = voice === 'up', xa = X(beat * 4) - 5, xb = X(beat * 4 + 4 - 4 / tn) + 5;
-            var yb = up2 ? tTop - 38 : tBot + 38, dy = up2 ? 5 : -5;
+            var yb = up2 ? tTop - 38 - aU : tBot + 38 + aD, dy = up2 ? 5 : -5;
             out.push('<path d="M' + f1(xa) + ' ' + f1(yb + dy) + ' L' + f1(xa) + ' ' + f1(yb) + ' L' + f1(xb) + ' ' + f1(yb) + ' L' + f1(xb) + ' ' + f1(yb + dy) +
               '" fill="none" stroke="currentColor" stroke-width="1"/>');
             out.push('<text class="ct" x="' + f1((xa + xb) / 2) + '" y="' + f1(up2 ? yb - 3 : yb + 12) + '" text-anchor="middle" font-style="italic">3</text>');
@@ -1019,7 +1422,7 @@ SD rlrlrlrl</pre>
         }
       });
 
-      var sy = yB + (hasDown ? 50 : 20) + (anyTrip && hasDown ? 16 : 0);
+      var sy = yB + (hasDown ? 50 : 20) + (anyTrip && hasDown ? 16 : 0) + aD;
       if (hasStick) {
         var sp = {};
         bar.hits.forEach(function (h) { if (h.stick) { var q = (sp[h.pos] = sp[h.pos] || {}); if (h.stick === 'B') { q.R = 1; q.L = 1; } else q[h.stick] = 1; } });
@@ -1065,6 +1468,7 @@ SD rlrlrlrl</pre>
     return '<svg class="nt-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H +
       '" role="img" aria-label="Drum notation, ' + nB + (nB === 1 ? ' bar' : ' bars') + '">' + out.join('') + '</svg>';
   }
+  setMethods(methodsText(null));
   /* LOGIC END */
 
   /* ---------- state and storage ---------- */
@@ -1126,7 +1530,7 @@ SD rlrlrlrl</pre>
       'HH x-x-x-x-x-x-x-x-\nSD ----o-------o---\nBD o-----oo--oo----\n');
   var EXAMPLE = '# Stick Control, 10 min\n' + STICK_SAMPLE + '\n\n# Syncopation, 20 min\nSyncopation p5 #7\nSyncopation p5 #8\n\n# Carmine, 15 min\n' + SAMPLE;
 
-  function blank() { return { v: 1, weekText: EXAMPLE, edited: false, memory: {}, sessions: [], mask: [true, true, true, true], sub: 1, conf: sanitizeConf(null), templates: [] }; }
+  function blank() { return { v: 1, weekText: EXAMPLE, edited: false, memory: {}, sessions: [], mask: [true, true, true, true], sub: 1, conf: sanitizeConf(null), methods: methodsText(null), templates: [] }; }
   function normalize(d) {
     var b = blank();
     if (!d || typeof d !== 'object') return b;
@@ -1138,8 +1542,9 @@ SD rlrlrlrl</pre>
       memory: (d.memory && typeof d.memory === 'object' && !Array.isArray(d.memory)) ? d.memory : {},
       sessions: Array.isArray(d.sessions) ? d.sessions : [],
       mask: (Array.isArray(d.mask) && d.mask.length === 4) ? d.mask.map(Boolean) : b.mask,
-      sub: [1, 2, 3, 4].indexOf(d.sub) >= 0 ? d.sub : b.sub,
+      sub: [0, 1, 2, 3, 4].indexOf(d.sub) >= 0 ? d.sub : b.sub,
       conf: sanitizeConf(d.conf),
+      methods: typeof d.methods === 'string' ? d.methods.slice(0, 20000) : methodsText(d.conf),
       templates: (Array.isArray(d.templates) ? d.templates : []).filter(function (t) { return t && typeof t.name === 'string' && typeof t.text === 'string' && t.name.trim(); })
         .map(function (t) { return { name: t.name.trim().slice(0, 40), text: t.text.slice(0, 8000) }; })
     };
@@ -1161,7 +1566,7 @@ SD rlrlrlrl</pre>
     var names = {};
     file.templates.forEach(function (t) { names[t.name] = true; });
     return {
-      v: 1, weekText: file.weekText, edited: file.edited, mask: file.mask, sub: file.sub, conf: file.conf,
+      v: 1, weekText: file.weekText, edited: file.edited, mask: file.mask, sub: file.sub, conf: file.conf, methods: file.methods,
       memory: memory, sessions: sessions,
       templates: file.templates.concat(local.templates.filter(function (t) { return !names[t.name]; }))
     };
@@ -1170,6 +1575,7 @@ SD rlrlrlrl</pre>
   var state;
   try { state = normalize(JSON.parse(localStorage.getItem(LS) || 'null')); } catch (e) { state = blank(); }
   configure(state.conf);
+  setMethods(state.methods);
 
   // ponytail: sessions and templates are uncapped, so localStorage (~5 MB, a few thousand sessions) is the ceiling; external sync is the upgrade path.
   var saveWarned = false;
@@ -1202,7 +1608,7 @@ SD rlrlrlrl</pre>
     return s;
   }
 
-  var NT = {};
+  var NT = {}, NTM = {};
   function paintNotation() {
     var els = document.querySelectorAll('.nt[data-nt]');
     for (var i = 0; i < els.length; i++) {
@@ -1210,9 +1616,11 @@ SD rlrlrlrl</pre>
       if (el.offsetParent === null) continue;
       var pat = NT[el.getAttribute('data-nt')];
       if (!pat) { el.innerHTML = ''; continue; }
-      el.innerHTML = pat.error
+      var m = NTM[el.getAttribute('data-nt')] || {}, gs = pat.error ? '' : gsLink(pat, m.title, m.tempo);
+      el.innerHTML = (pat.error
         ? '<div class="nt-err">' + esc(pat.error) + '</div>'
-        : renderStaff(pat, el.clientWidth || 340);
+        : renderStaff(pat, el.clientWidth || 340)) +
+        (gs ? '<a class="gs" href="' + esc(gs) + '" target="_blank" rel="noopener">Open in Beat Mapper</a>' : '');
     }
   }
   var rzTimer = null;
@@ -1253,18 +1661,19 @@ SD rlrlrlrl</pre>
         var idx = this.beat, when = this.next, sub = (this.subFor && this.subFor(idx)) || this.sub;
         if (this.ctx && (!this.audible || this.audible(idx))) {
           this.blip(when, idx % 4 === 0);
-          for (var k = 1; k < sub; k++) this.blip(when + k * 60 / this.bpm / sub, false, true);
+          for (var k = 1; k < sub; k++) this.blip(when + k * 60 / this.bpm / sub, false, true, !!(this.accFor && this.accFor(idx, k, sub)));
         }
         if (this.onBeat) this.onBeat(idx, when, this.gen);
         this.next += 60 / this.bpm;
         this.beat++;
       }
     },
-    blip: function (t, accent, soft) {
+    /* accent: the bar's downbeat. soft: a click between the beats, a little louder (but still lower than a beat) on an accented note */
+    blip: function (t, accent, soft, loud) {
       var o = this.ctx.createOscillator(), g = this.ctx.createGain();
       o.frequency.value = soft ? 520 : (accent ? 1100 : 760);
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(soft ? 0.16 : (accent ? 0.5 : 0.32), t + 0.002);
+      g.gain.exponentialRampToValueAtTime(soft ? (loud ? 0.26 : 0.13) : (accent ? 0.5 : 0.32), t + 0.002);
       g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
       o.connect(g);
       g.connect(this.ctx.destination);
@@ -1299,15 +1708,25 @@ SD rlrlrlrl</pre>
     if (idx < S.ciEnd) return true;
     return !!S.mask[idx % 4];
   };
-  /* a routine item set to follow the notes clicks each beat's subdivision: the bar's grid, or 3/6 on a triplet beat.
+  /* an exercise set to follow the notes (a routine item, or Follow notes in other sections) clicks each beat's subdivision: the bar's grid, or 3/6 on a triplet beat.
      Bars count from the start of the clean run; the count-in and the wait after a mistake use the first bar. */
   Click.subFor = function (idx) {
-    if (!S || S.type !== 'routine') return 0;
+    if (!S) return 0;
     var l = S.lines[S.active];
-    if (!l || l.sub || !l.pattern || !l.pattern.bars) return 0;
-    var bars = l.pattern.bars, k = Math.max(0, idx - S.base);
+    if (!l || (S.type === 'routine' ? l.sub : state.sub) || !l.pattern || !l.pattern.bars) return 0;
+    /* the notes on screen: for a groove, the way being played */
+    var pat = NT.live && NT.live.bars ? NT.live : l.pattern;
+    var bars = pat.bars, k = Math.max(0, idx - S.base);
     var bar = bars[Math.floor(k / 4) % bars.length];
     return tripOf(bar, k % 4) || Math.max(1, bar.grid / 4);
+  };
+  /* following the notes, an accented note between the beats clicks louder, at the in-between pitch so the beat stays clear */
+  Click.accFor = function (idx, k, sub) {
+    if (!Click.subFor(idx)) return false;
+    var pat = NT.live && NT.live.bars ? NT.live : S.lines[S.active].pattern;
+    var bars = pat.bars, n = Math.max(0, idx - S.base);
+    var bar = bars[Math.floor(n / 4) % bars.length], p = (n % 4) * 4 + k * 4 / sub;
+    return bar.hits.some(function (h) { return h.acc && Math.abs(h.pos - p) < 0.02; });
   };
   Click.onBeat = function (idx, when, gen) {
     var ms = Math.max(0, (when - Click.now()) * 1000);
@@ -1333,21 +1752,22 @@ SD rlrlrlrl</pre>
     sections = parseWeek($('weekText').value);
     renderRules();
     $('hintEx').hidden = state.edited;
-    NT = {};
+    NT = {}; NTM = {};
     if (!sections.length) {
       $('secs').innerHTML = '<ul class="cards"><li class="empty">Add one exercise per line to begin.</li></ul>';
       return;
     }
     $('secs').innerHTML = sections.map(function (sec, si) {
-      var T = TYPES[sec.type];
+      var T = { label: typeLabel(sec.type) };
       var items = sec.items.map(function (it, ii) {
         var m = state.memory[it.key];
-        var st = startTempo(m && m.last != null ? m.last : null, sec.type);
+        var st = startTempo(m && m.last != null ? m.last : null, sec.type, lineTempo(it.label));
         var note = m && m.last != null ? 'Last ' + m.last + ', starts at ' + st + ' BPM' : 'New, starts at ' + st + ' BPM';
         var rsp = sec.type === 'routine' ? splitItem(it.label) : null;
         if (rsp) note = (rsp.tempo && m && m.start ? 'Last start ' + m.start + ', now ' : '') + itemMeta({ tempo: routineStart(rsp, m), secs: rsp.secs });
         var id = 'w' + si + '_' + ii;
         NT[id] = it.pattern;
+        NTM[id] = rsp ? { title: rsp.name, tempo: routineStart(rsp, m) } : { title: it.label, tempo: st };
         if (rsp) return '<li><div class="top"><span class="name">' + esc(rsp.name) + '</span><span class="meta">' + note + '</span></div>' +
           (rsp.detail ? '<div class="muted">' + esc(rsp.detail) + '</div>' : '') +
           (it.pattern ? '<div class="nt" data-nt="' + id + '"></div>' : '') + '</li>';
@@ -1408,15 +1828,15 @@ SD rlrlrlrl</pre>
     }
     if (S.finished) { renderSummary(box); return; }
     if (S.type === 'routine') { renderRoutine(box); return; }
-    var l = curLine(), st = curStep(l), T = TYPES[S.type];
-    Click.bpm = l.tempo; Click.sub = state.sub;
+    var l = curLine(), st = curStep(l), T = { label: typeLabel(S.type) };
+    Click.bpm = l.tempo; Click.sub = state.sub || 1;
     ladderMask();
     var ticks = '';
-    if (S.type !== 'groove') for (var i = 0; i < st.reps; i++) ticks += '<span class="tick"></span>';
+    if (!isComfy(S.type)) for (var i = 0; i < st.reps; i++) ticks += '<span class="tick"></span>';
     var rows = S.lines.map(function (x, idx) {
       var xs = curStep(x);
       var meta = x.done ? 'Clean at ' + x.tempo + ' BPM'
-        : x.tempo + ' BPM' + (x.steps.length > 1 ? ', way ' + (x.step + 1) + '/' + x.steps.length : '') + (S.type === 'groove' ? '' : ', ' + x.count + '/' + xs.reps);
+        : x.tempo + ' BPM' + (x.steps.length > 1 ? ', way ' + (x.step + 1) + '/' + x.steps.length : '') + (isComfy(S.type) ? '' : ', ' + x.count + '/' + xs.reps);
       return '<li class="' + (x.done ? 'done' : '') + '"><button data-line="' + idx + '"' +
         (idx === S.active ? ' aria-current="true"' : '') + (x.done ? ' disabled' : '') + '>' +
         '<span class="name">' + esc(x.label) + '</span><span class="meta">' + meta + '</span></button></li>';
@@ -1427,7 +1847,8 @@ SD rlrlrlrl</pre>
       return '<button class="chip' + (S.mask[j] ? ' on' : '') + '" data-beat="' + j + '" aria-pressed="' + (S.mask[j] ? 'true' : 'false') +
         '" aria-label="Click on beat ' + (j + 1) + '">' + (j + 1) + '</button>';
     }).join('');
-    NT = { live: S.type === 'groove' ? applyWay(l.pattern, st.code) : l.pattern };
+    NT = { live: applyOps(l.pattern, st.ops) };
+    NTM = { live: { title: l.label, tempo: l.tempo } };
     box.innerHTML =
       (S.notice ? '<div class="notice">' + esc(S.notice) + '</div>' : '') +
       '<div class="secname">' + esc(S.section) + '<span class="ty">' + esc(T.label) +
@@ -1441,14 +1862,14 @@ SD rlrlrlrl</pre>
       '<div class="count" id="cnt" aria-live="polite"></div>' +
       '<div class="beats" id="beats" aria-hidden="true"><span class="bd"></span><span class="bd"></span><span class="bd"></span><span class="bd"></span></div></div>' +
       '<button class="btn primary big" data-act="toggle">' + (S.running ? 'Pause' : (S.started ? 'Resume' : 'Start')) + '</button>' +
-      '<div class="pair">' + (S.type === 'groove' ? '<button class="btn" data-act="nextway">Comfortable, next way</button>' : '<button class="btn" data-act="rep">+1 rep</button>') +
+      '<div class="pair">' + (isComfy(S.type) ? '<button class="btn" data-act="nextway">Comfortable, next way</button>' : '<button class="btn" data-act="rep">+1 rep</button>') +
       '<button class="btn danger" data-act="miss">Mistake, restart</button></div>' +
       '<div class="clickbox"><div class="cl-h">Click on beats</div><div class="chips">' + chips + '</div>' +
       '<div class="presets"><button class="btn small" data-preset="all">All</button>' +
       '<button class="btn small" data-preset="no3">Mute 3</button>' +
       '<button class="btn small" data-preset="no24">Mute 2 and 4</button>' +
       '<button class="btn small" data-preset="only1">Only 1</button></div>' +
-      '<div class="cl-h" style="margin-top:12px">Subdivision click</div>' + subChips(state.sub) + '</div>' +
+      '<div class="cl-h" style="margin-top:12px">Subdivision click</div>' + subChips(state.sub, !!(l.pattern && l.pattern.bars)) + '</div>' +
       (l.pattern ? '<div class="nt" data-nt="live"></div>' : '') +
       '<ul class="lines">' + rows + '</ul>';
     paintNotation();
@@ -1462,6 +1883,7 @@ SD rlrlrlrl</pre>
   function subChips(cur, follow) {
     var opts = [['1', 'Quarters'], ['2', '8ths'], ['3', 'Triplets'], ['4', '16ths']];
     if (follow) opts.unshift(['0', 'Follow notes']);
+    else if (cur === 0) cur = 1; /* no notes to follow: quarters */
     return '<div class="presets">' + opts.map(function (x) {
       var on = cur === Number(x[0]);
       return '<button class="btn small' + (on ? ' primary' : '') + '" data-sub="' + x[0] + '" aria-pressed="' + on + '">' + x[1] + '</button>';
@@ -1473,6 +1895,7 @@ SD rlrlrlrl</pre>
     if (l.tempo) Click.bpm = l.tempo;
     Click.sub = l.sub || 1;
     NT = { live: l.pattern };
+    NTM = { live: { title: l.name, tempo: l.tempo } };
     var rows = S.lines.map(function (x, idx) {
       return '<li class="' + (x.done ? 'done' : '') + '"><button data-line="' + idx + '"' + (idx === S.active ? ' aria-current="true"' : '') + '>' +
         '<span class="name">' + esc(x.name) + '</span><span class="meta">' + (x.done ? 'Done' : itemMeta({ tempo: x.tempo, secs: x.secs })) + '</span></button></li>';
@@ -1544,7 +1967,7 @@ SD rlrlrlrl</pre>
     }
     var cnt = $('cnt');
     if (cnt) {
-      var base = (S.type === 'groove' ? l.count + (l.count === 1 ? ' clean bar' : ' clean bars') + ' in a row.' : l.count + ' of ' + st.reps + ' clean.') + ' Round ' + S.round + '.';
+      var base = (isComfy(S.type) ? l.count + (l.count === 1 ? ' clean bar' : ' clean bars') + ' in a row.' : l.count + ' of ' + st.reps + ' clean.') + ' Round ' + S.round + '.';
       if (!S.running) cnt.textContent = S.started ? 'Paused. ' + base : 'Press Start. A bar of count-in comes first. ' + base;
       else if (S.phase === 'countin') cnt.textContent = 'Count-in. ' + base;
       else if (S.phase === 'wait') cnt.textContent = 'Counting restarts on the next bar. ' + base;
@@ -1634,7 +2057,7 @@ SD rlrlrlrl</pre>
       var m = state.memory[k];
       return '<li><div><div class="name">' + esc(m.label) + '</div><div class="meta">' +
         (m.start ? 'Last start ' + m.start + ', highest clean ' + m.last + ', next start ' + (m.start + RAMP.next) + ' BPM'
-          : 'Last clean ' + m.last + ' BPM, next start ' + startTempo(m.last, m.type) + ' BPM') + '</div></div>' +
+          : 'Last clean ' + m.last + ' BPM, next start ' + startTempo(m.last, m.type, m.from) + ' BPM') + '</div></div>' +
         '<button class="btn small" data-forget="' + esc(k) + '">Forget</button></li>';
     }).join('') + '</ul>' : '<p class="muted">Exercises you finish a clean run on appear here with their next starting tempo.</p>';
 
@@ -1658,9 +2081,8 @@ SD rlrlrlrl</pre>
 
   function renderRules() {
     $('rulesDl').innerHTML =
-      '<dt>Ladder</dt><dd>Stick Control. ' + esc(ruleText('ladder')) + '</dd>' +
-      '<dt>Four-way</dt><dd>Syncopation. ' + esc(ruleText('fourway')) + '</dd>' +
-      '<dt>Groove</dt><dd>Carmine. ' + esc(ruleText('groove')) + '</dd>' +
+      '<dt>Ladder</dt><dd>' + esc(ruleText('ladder')) + '</dd>' +
+      METHOD_ORDER.map(function (k) { return '<dt>' + esc(METHODS[k].name) + '</dt><dd>' + esc(ruleText(k)) + '</dd>'; }).join('') +
       '<dt>Routine</dt><dd>' + esc(ruleText('routine')) + '</dd>' +
       '<dt>A mistake</dt><dd>restarts the count for that step.</dd>' +
       '<dt>Next time</dt><dd>start ' + CFG.drop + ' BPM below your highest clean tempo, never below the starting tempo of that type.</dd>' +
@@ -1674,20 +2096,47 @@ SD rlrlrlrl</pre>
       '<input id="' + id + '" type="number" inputmode="numeric" data-conf="' + key + '" min="' + min + '" max="' + max + '" value="' + val + '">' +
       (hint ? '<div class="cf-h">' + esc(hint) + '</div>' : '') + '</div>';
   }
-  function chk(type, i, label, on) {
-    return '<label class="chk"><input type="checkbox" data-way="' + type + ':' + i + '"' + (on ? ' checked' : '') + '><span>' + esc(label) + '</span></label>';
+  function chk(key, i, label, on) {
+    return '<label class="chk"><input type="checkbox" data-mkey="' + esc(key) + '" data-way="' + i + '"' + (on ? ' checked' : '') + '><span>' + esc(label) + '</span></label>';
   }
   var resetArmed = false;
 
+  /* one card per method: its rule and a switch for each way */
+  function methodCard(M) {
+    var off = state.conf.off[M.key] || [];
+    function on(i) { return off.indexOf(M.ways[i].label) < 0; }
+    var body = '';
+    if (M.ways.length > 1) {
+      M.blocks.forEach(function (b) {
+        if (!b.count) return;
+        if (b.one || b.groups.length !== 2) {
+          for (var i = b.start; i < b.start + b.count; i++) body += chk(M.key, i, M.ways[i].label, on(i));
+          return;
+        }
+        var rows = b.groups[0].options, cols = b.groups[1].options;
+        body += '<div class="table-scroll"><table class="wt"><thead><tr><th>' + esc(b.groups[0].name) + '</th>' +
+          cols.map(function (c, ci) { return '<th>' + String.fromCharCode(65 + ci) + '<br>' + esc(c.label) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+          rows.map(function (r, ri) {
+            return '<tr><th scope="row">' + (ri + 1) + '. ' + esc(r.label) + '</th>' + cols.map(function (c, ci) {
+              var i = b.start + ri * cols.length + ci;
+              return '<td>' + (i < b.start + b.count ? '<input type="checkbox" data-mkey="' + esc(M.key) + '" data-way="' + i + '" aria-label="' + esc(M.ways[i].label) + '"' + (on(i) ? ' checked' : '') + '>' : '') + '</td>';
+            }).join('') + '</tr>';
+          }).join('') + '</tbody></table></div>' +
+          '<p class="cf-h">Columns are the ' + esc(b.groups[1].name) + '.</p>';
+      });
+      body = '<div class="lbl">Ways to play each exercise</div>' + body +
+        '<div class="mbtns"><button class="btn small" data-mact="all" data-mkey="' + esc(M.key) + '">All ways</button>' +
+        '<button class="btn small" data-mact="first" data-mkey="' + esc(M.key) + '">Only the first</button></div>';
+    }
+    return '<div class="mcard"><h2>' + esc(M.name) + '</h2><p class="muted">' + esc(ruleText(M.key)) + '</p>' + body + '</div>';
+  }
+  function renderMethodCards() {
+    $('methErr').innerHTML = METHOD_ERRORS.length ? '<ul>' + METHOD_ERRORS.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '';
+    $('mcards').innerHTML = METHOD_ORDER.map(function (k) { return methodCard(METHODS[k]); }).join('');
+  }
+
   function renderMethods() {
     var c = state.conf;
-    var fw = TYPES.fourway.steps.map(function (s, i) { return chk('fourway', i, s.label, c.fourway.ways[i]); }).join('');
-    var rows = HANDS.map(function (h, hi) {
-      return '<tr><th scope="row">' + (hi + 1) + '. ' + esc(h) + '</th>' + FEET.map(function (f, fi) {
-        var i = 1 + hi * 3 + fi;
-        return '<td><input type="checkbox" data-way="groove:' + i + '" aria-label="Way ' + (hi + 1) + 'ABC'.charAt(fi) + '"' + (c.groove.ways[i] ? ' checked' : '') + '></td>';
-      }).join('') + '</tr>';
-    }).join('');
     $('methods').innerHTML =
       '<p class="muted">The rules for each type of section. Changes apply to the next session you start.</p>' +
       '<h2>Tempo</h2>' +
@@ -1697,19 +2146,21 @@ SD rlrlrlrl</pre>
       '<div class="mcard"><h2>Ladder<span>Stick Control</span></h2><p class="muted">' + esc(ruleText('ladder')) + '</p>' +
       numField('ladder.floor', 'Starting tempo for new lines (BPM)', '', c.ladder.floor, 30, 300) +
       numField('ladder.reps', 'Clean reps per line', '', c.ladder.reps, 1, 100) + '</div>' +
-      '<div class="mcard"><h2>Four-way<span>Syncopation</span></h2><p class="muted">' + esc(ruleText('fourway')) + '</p>' +
-      numField('fourway.floor', 'Starting tempo for new lines (BPM)', '', c.fourway.floor, 30, 300) +
-      numField('fourway.reps', 'Clean reps per way', '', c.fourway.reps, 1, 100) +
-      '<div class="lbl">Ways to play each exercise</div>' + fw + '</div>' +
-      '<div class="mcard"><h2>Groove<span>Carmine</span></h2><p class="muted">' + esc(ruleText('groove')) + '</p>' +
-      numField('groove.floor', 'Starting tempo for new lines (BPM)', '', c.groove.floor, 30, 300) +
-      '<div class="lbl">Ways to play each exercise</div>' +
-      chk('groove', 0, 'As written', c.groove.ways[0]) +
-      '<div class="table-scroll"><table class="wt"><thead><tr><th>Hand pattern</th><th>A<br>quarters</th><th>B<br>eighths</th><th>C<br>&amp;</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
-      '<p class="cf-h">Columns are the hi-hat foot pattern.</p>' +
-      '<div class="mbtns"><button class="btn small" data-mact="groove-all">All ways</button>' +
-      '<button class="btn small" data-mact="groove-base">Only as written</button></div></div>' +
-      '<div class="mcard"><div class="mbtns"><button class="btn small danger" data-mact="reset">' + (resetArmed ? 'Press again to reset' : 'Reset to defaults') + '</button></div></div>';
+      '<h2>Your methods</h2>' +
+      '<p class="muted">A method plays every exercise of a section in several ways. A section uses one when its heading names it (<code># Carmine, 15 min, groove</code>) or when the section name contains it.</p>' +
+      '<label class="lbl" for="methodText">Methods</label>' +
+      '<textarea id="methodText" spellcheck="false">' + esc(state.methods) + '</textarea>' +
+      '<div class="nt-err" id="methErr"></div>' +
+      '<details class="help"><summary>How to write a method</summary>' +
+      '<pre># Name, 10 reps, 60 BPM\nOne line saying what it is.\nWay: As written\nWays: hand x foot\n  hand: R hand = hands R | L hand = hands L\n  foot: quarters = HF xxxx | eighths = HF xxxxxxxx</pre>' +
+      '<p><code>10 reps</code> counts clean reps for every way. <code>until comfortable</code> moves on when you press Comfortable instead. <code>60 BPM</code> is where new exercises start.</p>' +
+      '<p><code>Way:</code> is one way. <code>Ways: a x b</code> plays every option of a with every option of b, each group on its own line. An option is <code>Label = ops</code>, or just a label when it only says how to play it.</p>' +
+      '<p>Ops, separated by commas: <code>HF xxxx</code> replaces that instrument with these notes in every bar (<code>CYM</code> is the cymbal the exercise uses), <code>+BD o---</code> adds notes, <code>cymbal R</code> plays the cymbal with the right hand and the drums with the left, <code>hands L</code> plays every hand note with the left.</p>' +
+      '<p>Permutations: <code>kick: each 16th +BD</code> makes one option per 16th of the bar, each adding a kick there. Also <code>each 8th</code>, <code>each 4th</code>, <code>each triplet</code>, and any instrument.</p></details>' +
+      '<div class="mbtns"><button class="btn small" data-mact="examples">Add back the example methods</button></div>' +
+      '<div id="mcards"></div>' +
+      '<div class="mcard"><div class="mbtns"><button class="btn small danger" data-mact="reset">' + (resetArmed ? 'Press again to reset' : 'Reset to defaults') + '</button></div><p class="cf-h">Resets the numbers, the ways switched on and the methods.</p></div>';
+    renderMethodCards();
   }
 
   function applyConf(c) {
@@ -1719,26 +2170,50 @@ SD rlrlrlrl</pre>
     renderMethods();
     renderWeek();
   }
+  function applyMethods(text, full) {
+    state.methods = text;
+    setMethods(text);
+    save();
+    if (full) renderMethods(); else renderMethodCards();
+    renderWeek();
+  }
 
   $('methods').addEventListener('change', function (e) {
     var t = e.target, c = JSON.parse(JSON.stringify(state.conf));
     if (t.dataset.conf) {
       var p = t.dataset.conf.split('.');
       if (p.length === 1) c[p[0]] = t.value; else c[p[0]][p[1]] = t.value;
-    } else if (t.dataset.way) {
-      var q = t.dataset.way.split(':');
-      c[q[0]].ways[Number(q[1])] = t.checked;
+    } else if (t.dataset.way && t.dataset.mkey) {
+      var M = METHODS[t.dataset.mkey], w = M && M.ways[Number(t.dataset.way)];
+      if (!w) return;
+      var off = (c.off[M.key] || []).filter(function (x) { return x !== w.label; });
+      if (!t.checked) off.push(w.label);
+      c.off[M.key] = off;
     } else return;
     applyConf(c);
+  });
+
+  var methTimer = null;
+  $('methods').addEventListener('input', function (e) {
+    if (e.target.id !== 'methodText') return;
+    clearTimeout(methTimer);
+    var v = e.target.value;
+    methTimer = setTimeout(function () { applyMethods(v); }, 400);
   });
 
   $('methods').addEventListener('click', function (e) {
     var b = e.target.closest('[data-mact]');
     if (!b) return;
-    var a = b.dataset.mact, c = JSON.parse(JSON.stringify(state.conf));
-    if (a === 'groove-all') c.groove.ways = c.groove.ways.map(function () { return true; });
-    else if (a === 'groove-base') c.groove.ways = c.groove.ways.map(function (_, i) { return i === 0; });
-    else if (a === 'reset') {
+    var a = b.dataset.mact, c = JSON.parse(JSON.stringify(state.conf)), M = METHODS[b.dataset.mkey];
+    if (a === 'all' && M) delete c.off[M.key];
+    else if (a === 'first' && M) c.off[M.key] = M.ways.slice(1).map(function (w) { return w.label; });
+    else if (a === 'examples') {
+      var ex = parseMethods(methodsText(null)), add = ex.order.filter(function (k) { return !METHODS[k]; });
+      if (!add.length) { alert('The example methods are all there already.'); return; }
+      var blocks = methodsText(null).split(/\n(?=#)/).filter(function (t) { return add.indexOf(normKey(/^#+\s*([^,\n]*)/.exec(t)[1])) >= 0; });
+      applyMethods(state.methods.replace(/\s*$/, '') + '\n\n' + blocks.join('\n').replace(/\s*$/, '') + '\n', true);
+      return;
+    } else if (a === 'reset') {
       if (!resetArmed) {
         resetArmed = true;
         renderMethods();
@@ -1747,7 +2222,9 @@ SD rlrlrlrl</pre>
       }
       resetArmed = false;
       c = sanitizeConf(null);
-    }
+      state.methods = methodsText(null);
+      setMethods(state.methods);
+    } else return;
     applyConf(c);
   });
 
@@ -1827,6 +2304,7 @@ SD rlrlrlrl</pre>
       if (!confirm('Import ' + f.name + '? Its plan and settings replace the ones here. Sessions, templates and tempos are combined, nothing is deleted.')) return;
       state = mergeData(state, normalize(d));
       configure(state.conf);
+      setMethods(state.methods);
       save();
       $('weekText').value = state.weekText;
       renderTpl();
@@ -2058,10 +2536,10 @@ SD rlrlrlrl</pre>
       var clock = $('clock');
       if (clock) clock.textContent = mmss(S.minutes * 60000 - S.elapsed);
       if (S.elapsed >= S.minutes * 60000 && !(S.type === 'routine' && curLine().finishing)) {
-        if (S.type === 'groove' || (S.type !== 'routine' && curLine().count > 0)) {
+        if (isComfy(S.type) || (S.type !== 'routine' && curLine().count > 0)) {
           if (!S.overtime) {
             S.overtime = true;
-            S.notice = S.type === 'groove' ? 'Time is up. Press Comfortable when you are done with this way.' : 'Time is up. Finish this run, it ends when the run is done or broken.';
+            S.notice = isComfy(S.type) ? 'Time is up. Press Comfortable when you are done with this way.' : 'Time is up. Finish this run, it ends when the run is done or broken.';
             renderPractice();
           }
         } else if (S.queue && S.queue.length) nextPart('time');
