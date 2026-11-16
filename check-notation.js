@@ -77,3 +77,41 @@ assert.strictEqual(L.newSession(sec, { [k]: { last: 80, type: 'ladder', from: 50
 const svg = L.renderStaff(pat('HH X-x-+-o-\nSD O-g-x-f-|d-z-R-L-\nBD o-------'), 600);
 assert.ok(svg.startsWith('<svg') && !/NaN|undefined/.test(svg));
 console.log('notation ok');
+
+// a routine item marked ladder: ladder rules for its time, tempo memory like a ladder line
+{
+  const sec = L.parseWeek('# Day 1 hands, routine\nWrist development, right hand, ladder, 60 BPM, 7 min: details\nSD r-r-r-r-\nPlain item 60 BPM 2 min\nSD rrrr')[0];
+  assert.strictEqual(sec.type, 'routine');
+  assert.strictEqual(sec.minutes, 9);
+  let s = L.newSession(sec, {});
+  assert.deepStrictEqual([s.lines[0].name, s.lines[0].ladder, s.lines[0].tempo, s.lines[0].detail], ['Wrist development right hand', true, 60, 'details']);
+  assert.strictEqual(s.lines[1].ladder, false);
+  s.lines[0].top = 90; s.lines[1].top = 70;
+  const mem = {};
+  L.applyResults(mem, L.results(s), 'routine');
+  assert.deepStrictEqual(mem[sec.items[0].key], { label: 'Wrist development right hand', last: 90, type: 'ladder', from: 60 });
+  assert.strictEqual(mem[sec.items[1].key].type, 'routine');
+  // next session: 10 below the highest clean, never below the written tempo
+  assert.strictEqual(L.newSession(sec, mem).lines[0].tempo, 80);
+  mem[sec.items[0].key].last = 65;
+  assert.strictEqual(L.newSession(sec, mem).lines[0].tempo, 60);
+}
+console.log('routine ladder items ok');
+
+// "N bars" in a routine item: bars at each tempo, rounded up to whole passes of the notes
+{
+  const sec = L.parseWeek('# Day 1 hands, routine\nFinger dribbling, right hand, ladder, 100 BPM, 64 bars, 5 min: details\nSD rrrr|rrrr|rrrr|rrrr\nOdd 60 BPM 10 bars 2 min\nSD r-r-|r-r-|r-r-\nOne bar 60 BPM 12 bars\nPlain 60 BPM 2 min')[0];
+  const s = L.newSession(sec, {});
+  assert.deepStrictEqual(s.lines.map(l => [l.name, l.bars]), [['Finger dribbling right hand', 64], ['Odd', 10], ['One bar', 12], ['Plain', 0]]);
+  assert.strictEqual(s.lines[0].ladder, true);
+  assert.strictEqual(s.lines[0].tempo, 100);
+}
+console.log('bars per tempo ok');
+
+// the click fades only when the item says fade
+{
+  const sec = L.parseWeek('# A, routine\nWrist, ladder, fade, 60 BPM, 7 min: d\nSD r-r-\nWrist left, ladder, 60 BPM, 7 min\nSD l-l-')[0];
+  const s = L.newSession(sec, {});
+  assert.deepStrictEqual(s.lines.map(l => [l.name, l.ladder, l.fade]), [['Wrist', true, true], ['Wrist left', true, false]]);
+}
+console.log('fade ok');
