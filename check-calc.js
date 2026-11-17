@@ -5,22 +5,44 @@ const logic = src.slice(src.indexOf('/* LOGIC START */'), src.indexOf('/* LOGIC 
 const L = new Function(logic + '; return { calcPlan, calcFrom, goalOf, parseWeek };')();
 const near = (a, b, e) => assert.ok(Math.abs(a - b) <= e, a + ' vs ' + b);
 
-// the planner's example: 80 to 120 by 2 BPM, 20 reps of 4 bars, 2 weeks of 7 days
-const r = L.calcPlan({ start: 80, goal: 120, step: 2, reps: 20, bars: 4, weeks: 2, days: 7, drop: 0 });
-assert.strictEqual(r.tempos, 21);
-assert.strictEqual(r.cleanReps, 420);
-assert.strictEqual(r.sessions, 14);
-assert.strictEqual(r.gainPerWeek, 20);
-near(r.formulaSec / 60, 68.2, 0.05);          // the formula: 2RB ln((G+1)/(S-1)) minutes
-near(r.playSec / 60, 68.2, 0.5);              // the exact sum is close to it
-near(r.dailySec, r.playSec / 14, 1e-9);
-assert.strictEqual(r.climbSec, 0);
-// doubling the reps doubles the time
-near(L.calcPlan({ start: 80, goal: 120, step: 2, reps: 40, bars: 4, weeks: 2, days: 7 }).playSec, 2 * r.playSec, 1e-6);
+// your case: 60 to 115 by 2, 10 passes of 4 bars, drop 10, 4 weeks of 7 days
+let r = L.calcPlan({ start: 60, goal: 115, step: 2, reps: 10, bars: 4, weeks: 4, days: 7, drop: 10 });
+assert.strictEqual(r.tempos, 29);                 // 60, 62 ... 116
+assert.strictEqual(r.perSession, 2);              // 29 tempos in 28 sessions: 2 new a session
+assert.strictEqual(r.sessions, 15);
+assert.strictEqual(r.climb, 6);                   // best - 10 ... best by 2
+// no session is shorter than one tempo at the start: 160 beats at 60 BPM
+const oneTempo = 10 * 4 * 4 * 60 / 60;
+assert.ok(r.sessionSec > oneTempo, r.sessionSec);
+// first session: 60 and 62, each with a count-in, one rest between
+// tempos a session: 2, then 2+2 and 4+2 (the climb stops at 60), then 6+2 for 11 sessions, then 6+1 (116 is the last)
+assert.strictEqual(r.passes, 10 * (2 + 4 + 6 + 11 * 8 + 7));
+// session 2 replays 60 and 62 (60 is the floor) then plays 64, 66: 4 tempos
+const two = L.calcPlan({ start: 60, goal: 66, step: 2, reps: 10, bars: 4, weeks: 1, days: 2, drop: 10 });
+assert.deepStrictEqual([two.perSession, two.sessions], [2, 2]);
+const t = b => 10 * 4 * 240 / b / 4 * 4;          // clean playing of one tempo, seconds
+const bar = b => 240 / b;
+const s1 = t(60) + bar(60) + t(62) + bar(62) + 1;
+const s2 = [60, 62, 64, 66].reduce((a, b, k) => a + t(b) + bar(b) + (k ? 1 : 0), 0);
+near(two.totalSec, s1 + s2, 1e-6);
+near(two.longestSec, s2, 1e-6);
+// drop 0 still replays the best: the app starts the next session at it
+assert.strictEqual(L.calcPlan({ start: 60, goal: 80, step: 5, reps: 5, bars: 1, weeks: 1, days: 2, drop: 0 }).climb, 1);
+// the formula is playing every tempo once: the planner's example, 80 to 120 by 2, 20 reps of 4 bars
+r = L.calcPlan({ start: 80, goal: 120, step: 2, reps: 20, bars: 4, weeks: 2, days: 7, drop: 0 });
+near(r.formulaSec / 60, 68.2, 0.05);
+near(r.onceSec / 60, 68.2, 0.5);
+assert.ok(r.totalSec > r.onceSec);
+// the mistake buffer adds that share of the playing time, nothing else
+{
+  const o = { start: 60, goal: 66, step: 2, reps: 10, bars: 4, weeks: 1, days: 2, drop: 10 };
+  const clean = L.calcPlan(o), buf = L.calcPlan(Object.assign({}, o, { buffer: 50 }));
+  near(buf.bufferSec, clean.playSec * 0.5, 1e-6);
+  near(buf.totalSec, clean.totalSec + clean.playSec * 0.5, 1e-6);
+  assert.strictEqual(clean.bufferSec, 0);
+}
 // a goal not on a step: the last tempo is the first past it
 assert.strictEqual(L.calcPlan({ start: 60, goal: 72, step: 5, reps: 1, bars: 1, weeks: 1, days: 1 }).last, 75);
-// a drop adds the climb back each session after the first
-assert.ok(L.calcPlan({ start: 80, goal: 120, step: 2, reps: 20, bars: 4, weeks: 2, days: 7, drop: 10 }).climbSec > 0);
 // nonsense in, nothing out
 assert.strictEqual(L.calcPlan({ start: 120, goal: 80, step: 2, reps: 20, bars: 4, weeks: 2, days: 7 }), null);
 

@@ -89,11 +89,11 @@ console.log('notation ok');
   s.lines[0].top = 90; s.lines[1].top = 70;
   const mem = {};
   L.applyResults(mem, L.results(s), 'routine');
-  assert.deepStrictEqual(mem[sec.items[0].key], { label: 'Wrist development right hand', last: 90, type: 'ladder', from: 60 });
-  assert.strictEqual(mem[sec.items[1].key].type, 'routine');
+  assert.deepStrictEqual(mem['wrist development right hand'], { label: 'Wrist development right hand', last: 90, type: 'ladder', from: 60 });
+  assert.strictEqual(mem['plain item'].type, 'routine');
   // next session: 10 below the highest clean, never below the written tempo
   assert.strictEqual(L.newSession(sec, mem).lines[0].tempo, 80);
-  mem[sec.items[0].key].last = 65;
+  mem['wrist development right hand'].last = 65;
   assert.strictEqual(L.newSession(sec, mem).lines[0].tempo, 60);
 }
 console.log('routine ladder items ok');
@@ -115,3 +115,27 @@ console.log('bars per tempo ok');
   assert.deepStrictEqual(s.lines.map(l => [l.name, l.ladder, l.fade]), [['Wrist', true, true], ['Wrist left', true, false]]);
 }
 console.log('fade ok');
+
+// settings per item: passes, step and drop; tempo memory follows the name
+{
+  const L2 = new Function(logic + '; return { parseWeek, newSession, results, applyResults, splitItem, routineStart };')();
+  const sp = L2.splitItem('Wrist development, right hand, ladder, 60 BPM, 10 passes, 4 BPM drop, 2 BPM step, 7 min: Goal 115 bpm');
+  assert.deepStrictEqual([sp.name, sp.tempo, sp.secs, sp.passes, sp.inc, sp.drop, sp.ladder], ['Wrist development right hand', 60, 420, 10, 2, 4, true]);
+  assert.deepStrictEqual(['step 3 BPM, drop of 0 BPM, 80 BPM', 'x 80 bpm +2 bpm steps'].map(t => { const q = L2.splitItem(t); return [q.tempo, q.inc, q.drop]; }), [[80, 3, 0], [80, 2, null]]);
+  const sec = L2.parseWeek('# A, routine\nWrist, ladder, 60 BPM, 10 passes, 4 BPM drop, 2 BPM step, 7 min\nSD r-r-|r-r-\nPlain, 60 BPM, 3 BPM drop, 3 passes, 2 min')[0];
+  let s = L2.newSession(sec, {});
+  assert.deepStrictEqual(s.lines.map(l => [l.passes, l.inc, l.drop, l.key]), [[10, 2, 4, 'wrist'], [3, 0, 3, 'plain']]);
+  s.lines[0].top = 80; s.lines[1].top = 70;
+  const mem = {};
+  L2.applyResults(mem, L2.results(s), 'routine');
+  assert.deepStrictEqual(mem.wrist, { label: 'Wrist', last: 80, type: 'ladder', from: 60, drop: 4 });
+  // next session: 4 below the best for both, the plain one too because it has a drop
+  assert.deepStrictEqual(L2.newSession(sec, mem).lines.map(l => l.tempo), [76, 67]);
+  // changing its settings, tempo or details keeps the memory
+  const sec2 = L2.parseWeek('# A, routine\nWrist, ladder, 50 BPM, 20 passes, 6 BPM drop, 5 min: new details\nSD r-r-')[0];
+  assert.strictEqual(L2.newSession(sec2, mem).lines[0].tempo, 74);
+  // an entry kept by the whole line, from before, is still found
+  const old = L2.parseWeek('# A, routine\nOld item 60 BPM 2 min')[0];
+  assert.strictEqual(L2.newSession(old, { [old.items[0].key]: { last: 70, start: 66, type: 'routine' } }).lines[0].tempo, 67);
+}
+console.log('item settings ok');

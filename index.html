@@ -133,6 +133,16 @@ textarea {
   resize: vertical;
 }
 #note { font: 16px/1.5 var(--body); min-height: 90px; }
+/* on a laptop the plan and methods boxes grow past the column, centred, so long note lines fit on one line */
+@media (min-width: 760px) {
+  #weekText, #methodText {
+    --tw: min(1200px, calc(100vw - 64px));
+    width: var(--tw);
+    max-width: none;
+    margin-left: calc((100% - var(--tw)) / 2);
+    min-height: 50vh;
+  }
+}
 .hint {
   background: var(--accent-soft);
   border-radius: 8px;
@@ -306,7 +316,7 @@ textarea {
 .stat .s { color: var(--muted); font-size: 13px; font-style: italic; }
 .cnotes { padding-left: 18px; margin: 0 0 10px; }
 .cnotes li { margin: 4px 0; }
-.cnotes .warn { color: var(--bad); }
+
 .mcard { border-top: 1px solid var(--line); margin-top: 22px; padding-top: 2px; }
 .mcard h2 span { font-size: 15px; font-weight: 600; letter-spacing: 0.04em; color: var(--muted); margin-left: 6px; }
 .chk { display: flex; align-items: center; gap: 12px; min-height: 44px; cursor: pointer; }
@@ -370,6 +380,7 @@ textarea {
       <p>A routine is a checklist (hand speed, warm-ups). Each line is <code>Name 80 BPM 2 min: details</code>. Tempo and time are optional. With a time the item moves on by itself. With a tempo the metronome plays it after a bar of count-in. After 5 clean passes of the notes (5 x 2 bars for a 2-bar exercise) it rests a second, then plays a new bar of count-in 5 BPM faster. Press Mistake and those 5 passes start again. When the time is up, the pass you are playing finishes first. Next session the item starts 1 BPM above where it started this time. If every item has a time, the section runs for their total.</p>
       <p>Write <code>ladder</code> in a routine item to play it by ladder rules for its time: <code>Wrist development, ladder, 60 BPM, 7 min: details</code>. It needs 20 clean passes at each tempo (the ladder's reps on the Methods tab), then +5 BPM. Next session it starts 10 BPM below its highest clean tempo, never below the tempo written.</p>
       <p>Write a number of bars in a routine item to set how long it stays on each tempo, ladder or not: <code>Finger dribbling, ladder, 100 BPM, 64 bars, 5 min: details</code>. It plays that many clean bars before going up, rounded up to whole passes of the notes (64 bars of a 4-bar exercise is 16 passes). </p>
+      <p>Each routine item can set its own rules before the colon: <code>Wrist development, right hand, ladder, 60 BPM, 10 passes, 2 BPM step, 4 BPM drop, 7 min</code>. <code>10 passes</code> is the clean passes at each tempo (it wins over bars). <code>2 BPM step</code> is what goes on after each clean tempo. <code>4 BPM drop</code> makes the next session start that far below its highest clean tempo, never below the tempo written; a ladder item without one uses the drop on the Methods tab. Its tempo memory follows the exercise name, so changing these, the tempo or the details keeps it.</p>
       <p>In a routine the click plays every beat. Write <code>fade</code> in an item to make it fade away: <code>Wrist development, ladder, fade, 60 BPM, 7 min</code>. The click thins out in four equal parts of the passes at each tempo (all beats, then beat 3 muted, then 2 and 4, then only beat 1), and a mistake brings all beats back.</p>
       <p>Under an exercise, add one line per instrument to show its notes. One character per note position, <code>-</code> is a rest, <code>|</code> splits bars.</p>
 <pre># Carmine, 15 min
@@ -473,7 +484,8 @@ SD rlrlrlrl</pre>
     if (type === 'routine') return 'A checklist. Work down it in order. An item with a time (2 min) moves on by itself, otherwise press Done. An item with a tempo (80 BPM) starts after a bar of count-in. After ' +
       RAMP.reps + ' clean passes of the notes (' + RAMP.reps + ' x 2 bars for a 2-bar exercise) the click rests a second, then goes up ' + RAMP.bpm + ' BPM after a new bar of count-in. A mistake restarts those passes. When the time is up, the pass you are playing finishes first. Next session it starts ' + RAMP.next + ' BPM above this session\'s start. ' +
       'Write ladder in an item (Name, ladder, 60 BPM, 5 min) to play it by ladder rules: ' + CONF.ladder.reps + ' clean passes at each tempo, then +' + CFG.step + ' BPM. Next session it starts ' + CFG.drop + ' BPM below its highest clean tempo, never below the tempo written. ' +
-      'Write bars in an item (Name, 60 BPM, 32 bars, 5 min) to set how long it stays on each tempo: that many bars, rounded up to whole passes of the notes. The click plays every beat unless an item says fade (Name, fade, 60 BPM, 5 min): then it thins out in four equal parts of the passes, all beats, then beat 3 muted, then 2 and 4 muted, then only beat 1, and a mistake brings all beats back.';
+      'Write bars in an item (Name, 60 BPM, 32 bars, 5 min) to set how long it stays on each tempo: that many bars, rounded up to whole passes of the notes. ' +
+      'Each item can set its own rules: 10 passes (clean passes at each tempo), 2 BPM step (added after each clean tempo), 4 BPM drop (next session starts this far below its highest clean tempo, never below the tempo written). The click plays every beat unless an item says fade (Name, fade, 60 BPM, 5 min): then it thins out in four equal parts of the passes, all beats, then beat 3 muted, then 2 and 4 muted, then only beat 1, and a mistake brings all beats back.';
     var M = methodOf(type), s = CFG.step, c = CONF.ladder;
     if (M) {
       var n = buildSteps(type).length, ways = n === 1 ? 'one way' : n + ' ways', d = M.desc ? M.desc.replace(/\.?$/, '. ') : '';
@@ -1039,40 +1051,58 @@ SD rlrlrlrl</pre>
     return out;
   }
 
-  /* routine items: "Name 80 BPM 2 min: details". Tempo and time are optional. */
+  /* routine items: "Name 80 BPM 2 min: details". Tempo and time are optional.
+     Settings for that item, anywhere before the colon: ladder, fade, 32 bars, 10 passes, 2 BPM step, 4 BPM drop. */
   function splitItem(label) {
     var i = label.indexOf(':'), name = i > 0 ? label.slice(0, i).trim() : label, detail = i > 0 ? label.slice(i + 1).trim() : '';
-    var bm = /(\d{2,3})\s*bpm/i.exec(name), tm = /(\d{1,3})\s*(min\w*|sec\w*|s)\b/i.exec(name);
+    var st = /(\d{1,3})\s*bpm\s*steps?\b|\bsteps?\s*(?:of\s*)?\+?(\d{1,3})(?:\s*bpm)?\b/i.exec(name);
+    var work = st ? name.replace(st[0], ' ') : name;
+    var dr = /(\d{1,3})\s*bpm\s*drop\b|\bdrop\s*(?:of\s*)?(\d{1,3})(?:\s*bpm)?\b/i.exec(work);
+    if (dr) work = work.replace(dr[0], ' ');
+    var bm = /(\d{2,3})\s*bpm/i.exec(work), tm = /(\d{1,3})\s*(min\w*|sec\w*|s)\b/i.exec(work);
     var secs = tm ? parseInt(tm[1], 10) * (/^m/i.test(tm[2]) ? 60 : 1) : 0;
-    var lad = /\bladder\b/i.test(name), fade = /\bfade\b/i.test(name), br = /(\d{1,3})\s*(bars?|measures?)\b/i.exec(name);
-    var clean = name.replace(bm ? bm[0] : '', '').replace(tm ? tm[0] : '', '').replace(br ? br[0] : '', '').replace(/\bladder\b/i, '').replace(/\bfade\b/i, '').replace(/[\s,;]+/g, ' ').replace(/[\s,;]+$/, '').trim();
+    var lad = /\bladder\b/i.test(work), fade = /\bfade\b/i.test(work), br = /(\d{1,3})\s*(bars?|measures?)\b/i.exec(work), ps = /(\d{1,3})\s*(passes|pass|reps?)\b/i.exec(work);
+    var clean = work.replace(bm ? bm[0] : '', '').replace(tm ? tm[0] : '', '').replace(br ? br[0] : '', '').replace(ps ? ps[0] : '', '')
+      .replace(/\bladder\b/i, '').replace(/\bfade\b/i, '').replace(/[\s,;]+/g, ' ').replace(/[\s,;]+$/, '').trim();
+    var num = function (m) { return m ? parseInt(m[1] || m[2], 10) : 0; };
     /* 0: no subdivision named, the click follows the notes (or plays quarters when there are none) */
     var sub = /triplet/i.test(name) ? 3 : (/16th|sixteenth/i.test(name) ? 4 : (/8th|eighth/i.test(name) ? 2 : 0));
-    return { name: clean || name, detail: detail, tempo: bm ? parseInt(bm[1], 10) : 0, secs: secs, sub: sub, ladder: lad && !!bm, fade: fade && !!bm, bars: br && bm ? Math.max(1, parseInt(br[1], 10)) : 0 };
+    return { name: clean || name, detail: detail, tempo: bm ? parseInt(bm[1], 10) : 0, secs: secs, sub: sub, ladder: lad && !!bm, fade: fade && !!bm,
+      bars: br && bm ? Math.max(1, parseInt(br[1], 10)) : 0, passes: ps && bm ? Math.max(1, num(ps)) : 0,
+      inc: st && bm ? Math.max(1, num(st)) : 0, drop: dr && bm ? num(dr) : null };
   }
+  /* tempo memory for a routine item follows its name, so changing its tempo, time, settings or details keeps it. Older entries were kept by the whole line */
+  function routineKey(it) { return normKey(splitItem(it.label).name); }
+  function routineMem(memory, it) { return memory[routineKey(it)] || memory[it.key]; }
   function itemMeta(sp) {
     var o = [];
     if (sp.tempo) o.push(sp.tempo + ' BPM');
     if (sp.secs) o.push(sp.secs % 60 ? sp.secs + ' s' : sp.secs / 60 + ' min');
     if (sp.ladder) o.push('ladder');
     if (sp.fade) o.push('click fades');
-    if (sp.bars) o.push(sp.bars + (sp.bars === 1 ? ' bar' : ' bars') + ' a tempo');
+    if (sp.passes) o.push(sp.passes + (sp.passes === 1 ? ' pass' : ' passes') + ' a tempo');
+    else if (sp.bars) o.push(sp.bars + (sp.bars === 1 ? ' bar' : ' bars') + ' a tempo');
+    if (sp.inc) o.push('+' + sp.inc + ' BPM steps');
+    if (sp.drop != null) o.push(sp.drop + ' BPM drop');
     return o.join(', ');
   }
-  /* a ladder item starts below its highest clean tempo, as a ladder line does, never below its written tempo */
+  /* a ladder item, or one with a drop, starts that far below its highest clean tempo (the ladder's drop when none is written), never below its written tempo.
+     Other items start RAMP.next above last session's start */
+  function itemDrop(sp) { return sp.drop != null ? sp.drop : (sp.ladder ? CFG.drop : null); }
   function routineStart(sp, m) {
-    if (sp.ladder) return m && m.last != null ? Math.max(sp.tempo, m.last - CFG.drop) : sp.tempo;
+    var dp = itemDrop(sp);
+    if (dp != null) return m && m.last != null ? Math.max(sp.tempo, m.last - dp) : sp.tempo;
     return sp.tempo && m && m.start ? m.start + RAMP.next : sp.tempo;
   }
-  /* a routine item marked "ladder" plays by ladder rules for its time: the ladder's clean reps at each tempo, then its step up */
-  /* "32 bars" in an item sets how long it stays on each tempo: that many bars, rounded up to whole passes of the notes */
+  /* clean passes at each tempo: "10 passes", else "32 bars" (rounded up to whole passes of the notes), else the ladder's reps or the routine's */
   function lineReps(l) {
+    if (l.passes) return l.passes;
     if (l.bars) return Math.max(1, Math.ceil(l.bars / (repBeats(l) / 4)));
     return l.ladder ? CONF.ladder.reps : RAMP.reps;
   }
   /* an item marked "fade" thins its click in four equal groups of passes (every 5 of 20). Otherwise the click stays on every beat */
   function thinGroup(l, pass) { return Math.min(LADDER_MASKS.length - 1, Math.floor(pass * 4 / lineReps(l))); }
-  function lineStep(l) { return l.ladder ? CFG.step : RAMP.bpm; }
+  function lineStep(l) { return l.inc || (l.ladder ? CFG.step : RAMP.bpm); }
   /* k beats into the item's clean run. Returns true when the tempo went up. */
   function rampBeat(l, k) {
     if (!l.tempo || k === 0 || k % (lineReps(l) * repBeats(l))) return false;
@@ -1097,8 +1127,9 @@ SD rlrlrlrl</pre>
         var m = memory[it.key];
         var from = lineTempo(it.label), t = startTempo(m && m.last != null ? m.last : null, type, from);
         if (type === 'routine') {
-          var sp = splitItem(it.label), t0 = routineStart(sp, m);
-          return { label: it.label, name: sp.name, detail: sp.detail, key: it.key, pattern: it.pattern || null, steps: buildSteps('ladder'), ladder: sp.ladder, fade: sp.fade, bars: sp.bars, from: sp.tempo,
+          var sp = splitItem(it.label), rm = routineMem(memory, it), t0 = routineStart(sp, rm);
+          return { label: it.label, name: sp.name, detail: sp.detail, key: routineKey(it), pattern: it.pattern || null, steps: buildSteps('ladder'), ladder: sp.ladder, fade: sp.fade, bars: sp.bars,
+            passes: sp.passes, inc: sp.inc, drop: sp.drop, from: sp.tempo,
             step: 0, start: t0, tempo: t0, secs: sp.secs, sub: sp.sub || (it.pattern && it.pattern.bars ? 0 : 1), spent: 0, count: 0, done: false, top: null, mistakes: 0, slips: {} };
         }
         return {
@@ -1164,7 +1195,7 @@ SD rlrlrlrl</pre>
 
   function results(s) {
     if (s.type === 'routine') {
-      return s.lines.map(function (l) { return { label: l.name || l.label, key: l.key, start: l.start, top: l.top, mistakes: l.mistakes, slips: [], routine: true, ramp: !!l.start, ladder: !!l.ladder, from: l.from || 0, done: !!l.done }; });
+      return s.lines.map(function (l) { return { label: l.name || l.label, key: l.key, start: l.start, top: l.top, mistakes: l.mistakes, slips: [], routine: true, ramp: !!l.start, ladder: !!l.ladder, drop: l.drop, from: l.from || 0, done: !!l.done }; });
     }
     return s.lines.map(function (l) {
       var slips = Object.keys(l.slips || {}).map(function (k) {
@@ -1179,6 +1210,7 @@ SD rlrlrlrl</pre>
       if (r.top == null) return;
       if (r.ramp && r.ladder) memory[r.key] = { label: r.label, last: r.top, type: 'ladder', from: r.from };
       else if (r.ramp) memory[r.key] = { label: r.label, start: r.start, last: r.top, type: 'routine' };
+      if (r.ramp && r.drop != null) { memory[r.key].drop = r.drop; memory[r.key].from = r.from; }
       else if (!r.routine) {
         memory[r.key] = { label: r.label, last: r.top, type: type || 'ladder' };
         if (r.from) memory[r.key].from = r.from;
@@ -1513,27 +1545,43 @@ SD rlrlrlrl</pre>
   setMethods(methodsText(null));
 
   /* ---------- practice time calculator ---------- */
-  /* o: start, goal, step (BPM), reps (clean passes a tempo), bars (bars a pass, 4/4), weeks, days (a week), drop (BPM the next session starts below the best).
-     Playing time is the exact sum over the tempos start, start+step, ... up to the first at or past the goal. */
+  /* o: start, goal, step (BPM), reps (clean passes a tempo), bars (bars a pass, 4/4), weeks, days (a week), drop (BPM the next session starts below the best),
+     buffer (% added to each tempo's playing time for mistakes, which restart the passes).
+     Plays the sessions the way the app does: whole tempos only, each session after the first starting `drop` below the last one's best (never below the start)
+     and climbing back through the best before its new tempos, a bar of count-in at every tempo and a rest between tempos. New tempos a session are spread evenly
+     so the goal is reached within the weeks given. */
   function calcPlan(o) {
     var n = function (v) { v = Number(v); return isFinite(v) ? v : 0; };
-    var S = n(o.start), G = n(o.goal), d = n(o.step), R = n(o.reps), B = n(o.bars), W = n(o.weeks), D = n(o.days), drop = Math.max(0, n(o.drop));
+    var S = n(o.start), G = n(o.goal), d = n(o.step), R = n(o.reps), B = n(o.bars), W = n(o.weeks), D = n(o.days), drop = Math.max(0, n(o.drop)), buf = 1 + Math.max(0, n(o.buffer)) / 100;
     if (!(S > 0 && G > S && d > 0 && R > 0 && B > 0 && W > 0 && D > 0)) return null;
     var tempos = [];
     for (var t = S; tempos.length < 1000; t += d) { tempos.push(t); if (t >= G) break; }
-    var bar = function (bpm) { return 240 / bpm; };
-    var play = 0, over = 0;
-    tempos.forEach(function (bpm, i) { play += R * B * bar(bpm); over += bar(bpm) + (i ? RAMP.rest / 1000 : 0); });
-    /* each session after the first climbs back from `drop` below where the last one ended, never below the start */
-    var sessions = Math.round(W * D), back = Math.floor(drop / d), climb = 0;
-    for (var s = 1; s < sessions; s++) {
-      var at = S + (G - S) * s / sessions;
-      for (var j = 1; j <= back; j++) climb += R * B * bar(Math.max(S, at - j * d));
+    var bar = function (bpm) { return 240 / bpm; }, rest = RAMP.rest / 1000;
+    var planned = Math.max(1, Math.round(W * D)), q = Math.max(1, Math.ceil(tempos.length / planned)), used = Math.ceil(tempos.length / q);
+    var total = 0, longest = 0, passes = 0, play = 0, extra = 0, climbs = [], once = 0;
+    tempos.forEach(function (bpm) { once += R * B * bar(bpm); });
+    for (var s = 0; s < used; s++) {
+      var from = s * q, to = Math.min(tempos.length, from + q), list = [];
+      if (s > 0) {
+        var best = tempos[from - 1];
+        for (var c = Math.max(S, best - drop); c < best - 1e-9; c += d) list.push(c);
+        list.push(best);
+      }
+      climbs.push(list.length);
+      list = list.concat(tempos.slice(from, to));
+      var sec = 0;
+      list.forEach(function (bpm, k) { var p = R * B * bar(bpm); play += p; extra += p * (buf - 1); sec += p * buf + bar(bpm) + (k ? rest : 0); });
+      passes += list.length * R;
+      total += sec;
+      longest = Math.max(longest, sec);
     }
+    var mid = climbs.slice(1).sort(function (a, b) { return a - b; });
     return {
-      tempos: tempos.length, last: tempos[tempos.length - 1], cleanReps: tempos.length * R, sessions: sessions,
-      playSec: play, dailySec: play / sessions, overheadSec: over, climbSec: climb, climbDailySec: sessions > 1 ? climb / (sessions - 1) : 0,
-      gainPerWeek: (G - S) / W,
+      tempos: tempos.length, last: tempos[tempos.length - 1], perSession: q, sessions: used, planned: planned,
+      climb: mid.length ? mid[mid.length >> 1] : 0,
+      totalSec: total, sessionSec: total / used, longestSec: longest, playSec: play, bufferSec: extra, passes: passes,
+      weeks: used / D, gainPerWeek: (G - S) / (used / D),
+      onceSec: once,
       formulaSec: 60 * 4 * R * B * Math.log((G + d / 2) / (S - d / 2)) / d
     };
   }
@@ -1543,10 +1591,10 @@ SD rlrlrlrl</pre>
     var m = memory[it.key], B = it.pattern && it.pattern.bars ? it.pattern.bars.length : 1;
     var type = BASE[sec.type] || methodOf(sec.type) ? sec.type : 'ladder';
     if (type === 'routine') {
-      var sp = splitItem(it.label);
+      var sp = splitItem(it.label), dp = itemDrop(sp);
       if (!sp.tempo) return null;
-      return { name: sp.name, start: routineStart(sp, m), goal: goalOf(it.label), step: sp.ladder ? CFG.step : RAMP.bpm, bars: B,
-        reps: sp.bars ? Math.max(1, Math.ceil(sp.bars / B)) : (sp.ladder ? CONF.ladder.reps : RAMP.reps), drop: sp.ladder ? CFG.drop : 0, minutes: sp.secs / 60 };
+      return { name: sp.name, start: routineStart(sp, routineMem(memory, it)), goal: goalOf(it.label), step: sp.inc || (sp.ladder ? CFG.step : RAMP.bpm), bars: B,
+        reps: sp.passes || (sp.bars ? Math.max(1, Math.ceil(sp.bars / B)) : (sp.ladder ? CONF.ladder.reps : RAMP.reps)), drop: dp != null ? dp : 0, minutes: sp.secs / 60 };
     }
     var reps = buildSteps(type).reduce(function (a, st) { return a + (st.reps || CONF.ladder.reps); }, 0);
     return { name: it.label.replace(/,?\s*goal\s*:?\s*\d{2,3}\s*bpm/i, '').trim(), start: startTempo(m && m.last != null ? m.last : null, type, lineTempo(it.label)), goal: goalOf(it.label),
@@ -1889,8 +1937,11 @@ SD rlrlrlrl</pre>
         var st = startTempo(m && m.last != null ? m.last : null, sec.type, lineTempo(it.label));
         var note = m && m.last != null ? 'Last ' + m.last + ', starts at ' + st + ' BPM' : 'New, starts at ' + st + ' BPM';
         var rsp = sec.type === 'routine' ? splitItem(it.label) : null;
-        if (rsp) note = (rsp.ladder ? (m && m.last != null ? 'Last clean ' + m.last + ', now ' : '') : (rsp.tempo && m && m.start ? 'Last start ' + m.start + ', now ' : '')) +
-          itemMeta({ tempo: routineStart(rsp, m), secs: rsp.secs, ladder: rsp.ladder, fade: rsp.fade, bars: rsp.bars });
+        if (rsp) {
+          m = routineMem(state.memory, it);
+          note = (itemDrop(rsp) != null ? (m && m.last != null ? 'Last clean ' + m.last + ', now ' : '') : (rsp.tempo && m && m.start ? 'Last start ' + m.start + ', now ' : '')) +
+            itemMeta({ tempo: routineStart(rsp, m), secs: rsp.secs, ladder: rsp.ladder, fade: rsp.fade, bars: rsp.bars, passes: rsp.passes, inc: rsp.inc, drop: rsp.drop });
+        }
         var id = 'w' + si + '_' + ii;
         NT[id] = it.pattern;
         NTM[id] = rsp ? { title: rsp.name, tempo: routineStart(rsp, m) } : { title: it.label, tempo: st };
@@ -2200,7 +2251,8 @@ SD rlrlrlrl</pre>
     var mem = keys.length ? '<ul class="mem">' + keys.map(function (k) {
       var m = state.memory[k];
       return '<li><div><div class="name">' + esc(m.label) + '</div><div class="meta">' +
-        (m.start ? 'Last start ' + m.start + ', highest clean ' + m.last + ', next start ' + (m.start + RAMP.next) + ' BPM'
+        (m.drop != null ? 'Last clean ' + m.last + ' BPM, next start ' + Math.max(m.from || 0, m.last - m.drop) + ' BPM'
+          : m.start ? 'Last start ' + m.start + ', highest clean ' + m.last + ', next start ' + (m.start + RAMP.next) + ' BPM'
           : 'Last clean ' + m.last + ' BPM, next start ' + startTempo(m.last, m.type, m.from) + ' BPM') + '</div></div>' +
         '<button class="btn small" data-forget="' + esc(k) + '">Forget</button></li>';
     }).join('') + '</ul>' : '<p class="muted">Exercises you finish a clean run on appear here with their next starting tempo.</p>';
@@ -2375,9 +2427,8 @@ SD rlrlrlrl</pre>
 
   /* ---------- time calculator ---------- */
   var CALC_LS = 'drumladder.calc';
-  var calcIn = { start: 80, goal: 120, step: 2, reps: 20, bars: 4, weeks: 2, days: 7, drop: 0, pick: '' };
+  var calcIn = { start: 60, goal: 120, step: 5, reps: 20, bars: 4, weeks: 4, days: 7, drop: 10, buffer: 25, pick: '' };
   try { var cs = JSON.parse(localStorage.getItem(CALC_LS) || 'null'); if (cs && typeof cs === 'object') Object.keys(calcIn).forEach(function (k) { if (cs[k] != null) calcIn[k] = cs[k]; }); } catch (e) { }
-  var calcMins = 0;
   function calcSave() { try { localStorage.setItem(CALC_LS, JSON.stringify(calcIn)); } catch (e) { } }
   function calcExercises() {
     var out = [];
@@ -2396,8 +2447,6 @@ SD rlrlrlrl</pre>
   function renderCalc() {
     var ex = calcExercises(), groups = {}, order = [];
     ex.forEach(function (e) { if (!groups[e.sec]) { groups[e.sec] = []; order.push(e.sec); } groups[e.sec].push(e); });
-    var picked = ex.filter(function (e) { return e.id === calcIn.pick; })[0];
-    calcMins = picked ? picked.c.minutes : 0;
     $('calc').innerHTML =
       '<p class="muted">How long it takes to climb from a starting tempo to a goal, a step at a time, with a number of clean passes at each tempo.</p>' +
       '<div class="cf"><label class="lbl" for="calc-pick">Exercise</label><select id="calc-pick">' +
@@ -2411,13 +2460,13 @@ SD rlrlrlrl</pre>
       calcField('start', 'Start (BPM)', '', 1) + calcField('goal', 'Goal (BPM)', '', 1) +
       calcField('step', 'Step (BPM)', 'Added after each clean tempo.', 1) + calcField('reps', 'Passes a tempo', 'Clean passes at each tempo.', 1) +
       calcField('bars', 'Bars a pass', 'Bars of 4/4 in the notes.', 1) + calcField('drop', 'Drop (BPM)', 'Each session starts this far below your best.', 0) +
+      calcField('buffer', 'Mistake buffer (%)', 'Extra playing time for mistakes and restarts.', 0, 5) +
       calcField('weeks', 'Weeks', 'To reach the goal.', 0.5, 0.5) + calcField('days', 'Days a week', 'Days you practise this exercise.', 1) +
       '</div><div id="calcOut" aria-live="polite"></div>' +
       '<details class="help"><summary>How it is worked out</summary>' +
-      '<p>Each tempo takes passes x bars x 4 beats at that tempo. The total adds that up for every tempo from the start, a step at a time, to the first one at or past the goal. It is close to the formula</p>' +
-      '<pre>minutes = 4 x R x B x ln((G + d/2) / (S - d/2)) / d</pre>' +
-      '<p>with R passes, B bars, start S, goal G and step d (with a 2 BPM step that is 2 x R x B x ln((G+1)/(S-1))). Divided by weeks x days a week, that is the time a day. Time scales with the passes: half the passes, half the time.</p>' +
-      '<p>It counts clean playing only. Mistakes restart the passes, so real sessions take longer.</p></details>';
+      '<p>It plays the sessions the way the app does. A tempo takes passes x bars x 4 beats, plus a bar of count-in, and a second of rest before the next tempo. Only whole tempos count: a session never plays part of one. The new tempos are spread evenly so the goal is reached within the weeks given, and every session after the first starts the drop below the last best, never below the start, and climbs back through the best before its new tempos.</p>' +
+      '<p>Playing every tempo once, with no climbing back, would take 4 x R x B x ln((G + d/2) / (S - d/2)) / d minutes (R passes, B bars, start S, goal G, step d). That is the least the whole climb can take, but splitting it over the days hides that a session needs whole tempos and the climb back.</p>' +
+      '<p>Mistakes restart the passes. The mistake buffer adds that percentage to the playing time of every tempo: 25% means a quarter of the passes get played again. Set it to 0 for clean playing only.</p></details>';
     calcOut();
   }
   function calcOut() {
@@ -2425,21 +2474,19 @@ SD rlrlrlrl</pre>
     if (!box) return;
     if (!r) { box.innerHTML = '<p class="nt-err">Give a goal above the start, and numbers above 0 for the step, passes, bars, weeks and days.</p>'; return; }
     var tile = function (k, v, sub) { return '<div class="stat"><div class="k">' + esc(k) + '</div><div class="v">' + esc(v) + '</div><div class="s">' + esc(sub) + '</div></div>'; };
-    var notes = ['Count-ins and rests between tempos add about ' + minSec(r.overheadSec) + ' in total.'];
-    if (r.climbSec > 0) notes.push('Starting ' + calcIn.drop + ' BPM below your best each session adds about ' + minSec(r.climbDailySec) + ' a session, ' + hrMin(r.climbSec) + ' in total.');
-    if (r.last > calcIn.goal) notes.push('The steps end at ' + r.last + ' BPM, the first tempo past the goal.');
-    if (calcMins) {
-      var need = r.dailySec + r.climbDailySec;
-      notes.push(need > calcMins * 60 + 0.5
-        ? '<span class="warn">This exercise has ' + minSec(calcMins * 60) + ' a session in the week, less than the ' + minSec(need) + ' it needs.</span>'
-        : 'This exercise has ' + minSec(calcMins * 60) + ' a session in the week, enough for the ' + minSec(need) + ' it needs.');
-    }
+    var first = calcIn.reps * calcIn.bars * 240 / calcIn.start;
+    var notes = ['One tempo at ' + calcIn.start + ' BPM is ' + calcIn.reps + ' passes x ' + calcIn.bars + (calcIn.bars == 1 ? ' bar' : ' bars') + ' x 4 beats = ' +
+      (calcIn.reps * calcIn.bars * 4) + ' beats, ' + minSec(first) + ' of clean playing.'];
+    notes.push(r.perSession + (r.perSession === 1 ? ' new tempo' : ' new tempos') + ' a session reaches ' + r.last + ' BPM in ' + r.sessions +
+      (r.sessions === 1 ? ' session' : ' sessions') + (r.sessions < r.planned ? ', fewer than the ' + r.planned + ' in ' + calcIn.weeks + (calcIn.weeks == 1 ? ' week' : ' weeks') + '.' : '.'));
+    if (r.bufferSec > 0) notes.push('The ' + calcIn.buffer + '% mistake buffer adds ' + hrMin(r.bufferSec) + ' in total, about ' + minSec(r.bufferSec / r.sessions) + ' a session.');
+    if (r.climb) notes.push('Every session after the first starts ' + calcIn.drop + ' BPM below your best and plays ' + r.climb + (r.climb === 1 ? ' tempo' : ' tempos') + ' to get back there before the new ones. Lower the drop to shorten sessions.');
     box.innerHTML = '<div class="stats">' +
-      tile('Daily practice', minSec(r.dailySec), r.sessions + (r.sessions === 1 ? ' practice day' : ' practice days')) +
-      tile('Total practice', (Math.round(r.playSec / 6) / 10) + ' min', hrMin(r.playSec) + ' total') +
-      tile('Total clean passes', String(r.cleanReps), r.tempos + ' tempos x ' + calcIn.reps + ' passes') +
-      tile('BPM gain a week', '+' + (Math.round(r.gainPerWeek * 10) / 10), calcIn.start + ' to ' + calcIn.goal + ' BPM') +
-      '</div><ul class="cnotes">' + notes.map(function (n) { return '<li>' + (n.charAt(0) === '<' ? n : esc(n)) + '</li>'; }).join('') + '</ul>';
+      tile('Each session', minSec(r.sessionSec), 'longest ' + minSec(r.longestSec)) +
+      tile('Total practice', hrMin(r.totalSec), r.sessions + (r.sessions === 1 ? ' session' : ' sessions')) +
+      tile('Tempos a session', String(r.perSession + r.climb), r.climb ? r.perSession + ' new, ' + r.climb + ' to climb back' : r.perSession + ' new') +
+      tile('BPM gain a week', '+' + (Math.round(r.gainPerWeek * 10) / 10), calcIn.start + ' to ' + calcIn.goal + ' BPM in ' + (Math.round(r.weeks * 10) / 10) + (r.weeks === 1 ? ' week' : ' weeks')) +
+      '</div><ul class="cnotes">' + notes.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
   }
   $('calc').addEventListener('input', function (e) {
     var k = e.target.dataset.calc;
