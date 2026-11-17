@@ -291,6 +291,22 @@ textarea {
 }
 .cf input:focus-visible, .chk input:focus-visible, .wt input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .cf-h { color: var(--muted); font-size: 14px; margin-top: 3px; }
+/* time calculator */
+.cgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
+.cgrid .cf input[type="number"] { width: 100%; }
+.cf select {
+  width: 100%; min-height: 46px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface); color: var(--ink); font: 600 16px var(--body);
+}
+.cf select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 14px 0 12px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.stat .k { color: var(--muted); font-size: 14px; }
+.stat .v { font: 700 32px/1.15 var(--display); letter-spacing: 0.02em; font-variant-numeric: tabular-nums; margin: 2px 0; }
+.stat .s { color: var(--muted); font-size: 13px; font-style: italic; }
+.cnotes { padding-left: 18px; margin: 0 0 10px; }
+.cnotes li { margin: 4px 0; }
+.cnotes .warn { color: var(--bad); }
 .mcard { border-top: 1px solid var(--line); margin-top: 22px; padding-top: 2px; }
 .mcard h2 span { font-size: 15px; font-weight: 600; letter-spacing: 0.04em; color: var(--muted); margin-left: 6px; }
 .chk { display: flex; align-items: center; gap: 12px; min-height: 44px; cursor: pointer; }
@@ -325,6 +341,7 @@ textarea {
     <button class="tab" role="tab" id="t-practice" data-tab="practice" aria-selected="false">Practice</button>
     <button class="tab" role="tab" id="t-log" data-tab="log" aria-selected="false">Log</button>
     <button class="tab" role="tab" id="t-methods" data-tab="methods" aria-selected="false">Methods</button>
+    <button class="tab" role="tab" id="t-calc" data-tab="calc" aria-selected="false">Time</button>
   </div>
 
   <section id="p-week" role="tabpanel" aria-labelledby="t-week">
@@ -398,6 +415,10 @@ SD rlrlrlrl</pre>
 
   <section id="p-methods" role="tabpanel" aria-labelledby="t-methods" hidden>
     <div id="methods"></div>
+  </section>
+
+  <section id="p-calc" role="tabpanel" aria-labelledby="t-calc" hidden>
+    <div id="calc"></div>
   </section>
 
   <p class="foot">Saved in this browser only. Export a file to back up or move to another device. Importing takes the plan and settings from the file and adds its sessions, templates and tempos to the ones here.</p>
@@ -1490,6 +1511,47 @@ SD rlrlrlrl</pre>
       '" role="img" aria-label="Drum notation, ' + nB + (nB === 1 ? ' bar' : ' bars') + '">' + out.join('') + '</svg>';
   }
   setMethods(methodsText(null));
+
+  /* ---------- practice time calculator ---------- */
+  /* o: start, goal, step (BPM), reps (clean passes a tempo), bars (bars a pass, 4/4), weeks, days (a week), drop (BPM the next session starts below the best).
+     Playing time is the exact sum over the tempos start, start+step, ... up to the first at or past the goal. */
+  function calcPlan(o) {
+    var n = function (v) { v = Number(v); return isFinite(v) ? v : 0; };
+    var S = n(o.start), G = n(o.goal), d = n(o.step), R = n(o.reps), B = n(o.bars), W = n(o.weeks), D = n(o.days), drop = Math.max(0, n(o.drop));
+    if (!(S > 0 && G > S && d > 0 && R > 0 && B > 0 && W > 0 && D > 0)) return null;
+    var tempos = [];
+    for (var t = S; tempos.length < 1000; t += d) { tempos.push(t); if (t >= G) break; }
+    var bar = function (bpm) { return 240 / bpm; };
+    var play = 0, over = 0;
+    tempos.forEach(function (bpm, i) { play += R * B * bar(bpm); over += bar(bpm) + (i ? RAMP.rest / 1000 : 0); });
+    /* each session after the first climbs back from `drop` below where the last one ended, never below the start */
+    var sessions = Math.round(W * D), back = Math.floor(drop / d), climb = 0;
+    for (var s = 1; s < sessions; s++) {
+      var at = S + (G - S) * s / sessions;
+      for (var j = 1; j <= back; j++) climb += R * B * bar(Math.max(S, at - j * d));
+    }
+    return {
+      tempos: tempos.length, last: tempos[tempos.length - 1], cleanReps: tempos.length * R, sessions: sessions,
+      playSec: play, dailySec: play / sessions, overheadSec: over, climbSec: climb, climbDailySec: sessions > 1 ? climb / (sessions - 1) : 0,
+      gainPerWeek: (G - S) / W,
+      formulaSec: 60 * 4 * R * B * Math.log((G + d / 2) / (S - d / 2)) / d
+    };
+  }
+  function goalOf(label) { var g = /goal\s*:?\s*(\d{2,3})\s*bpm/i.exec(label || ''); return g ? parseInt(g[1], 10) : 0; }
+  /* the calculator's numbers for an exercise in the week, as the app would play it */
+  function calcFrom(sec, it, memory) {
+    var m = memory[it.key], B = it.pattern && it.pattern.bars ? it.pattern.bars.length : 1;
+    var type = BASE[sec.type] || methodOf(sec.type) ? sec.type : 'ladder';
+    if (type === 'routine') {
+      var sp = splitItem(it.label);
+      if (!sp.tempo) return null;
+      return { name: sp.name, start: routineStart(sp, m), goal: goalOf(it.label), step: sp.ladder ? CFG.step : RAMP.bpm, bars: B,
+        reps: sp.bars ? Math.max(1, Math.ceil(sp.bars / B)) : (sp.ladder ? CONF.ladder.reps : RAMP.reps), drop: sp.ladder ? CFG.drop : 0, minutes: sp.secs / 60 };
+    }
+    var reps = buildSteps(type).reduce(function (a, st) { return a + (st.reps || CONF.ladder.reps); }, 0);
+    return { name: it.label.replace(/,?\s*goal\s*:?\s*\d{2,3}\s*bpm/i, '').trim(), start: startTempo(m && m.last != null ? m.last : null, type, lineTempo(it.label)), goal: goalOf(it.label),
+      step: CFG.step, bars: B, reps: reps, drop: CFG.drop, minutes: sec.items.length ? sec.minutes / sec.items.length : 0 };
+  }
   /* LOGIC END */
 
   /* ---------- state and storage ---------- */
@@ -1800,7 +1862,7 @@ SD rlrlrlrl</pre>
 
   function setTab(name) {
     tab = name;
-    ['week', 'practice', 'log', 'methods'].forEach(function (n) {
+    ['week', 'practice', 'log', 'methods', 'calc'].forEach(function (n) {
       $('p-' + n).hidden = n !== name;
       $('t-' + n).setAttribute('aria-selected', n === name ? 'true' : 'false');
     });
@@ -1808,6 +1870,7 @@ SD rlrlrlrl</pre>
     if (name === 'practice') renderPractice();
     if (name === 'log') renderLog();
     if (name === 'methods') renderMethods();
+    if (name === 'calc') renderCalc();
   }
 
   function renderWeek() {
@@ -2308,6 +2371,90 @@ SD rlrlrlrl</pre>
       setMethods(state.methods);
     } else return;
     applyConf(c);
+  });
+
+  /* ---------- time calculator ---------- */
+  var CALC_LS = 'drumladder.calc';
+  var calcIn = { start: 80, goal: 120, step: 2, reps: 20, bars: 4, weeks: 2, days: 7, drop: 0, pick: '' };
+  try { var cs = JSON.parse(localStorage.getItem(CALC_LS) || 'null'); if (cs && typeof cs === 'object') Object.keys(calcIn).forEach(function (k) { if (cs[k] != null) calcIn[k] = cs[k]; }); } catch (e) { }
+  var calcMins = 0;
+  function calcSave() { try { localStorage.setItem(CALC_LS, JSON.stringify(calcIn)); } catch (e) { } }
+  function calcExercises() {
+    var out = [];
+    parseWeek($('weekText').value).forEach(function (sec) {
+      sec.items.forEach(function (it) { var c = calcFrom(sec, it, state.memory); if (c) out.push({ id: sec.name + '|' + it.key, sec: sec.name, c: c }); });
+    });
+    return out;
+  }
+  function minSec(sec) { var t = Math.round(sec), m = Math.floor(t / 60); return m ? m + 'm' + (t % 60 ? ' ' + (t % 60) + 's' : '') : t + 's'; }
+  function hrMin(sec) { var m = Math.round(sec / 60), h = Math.floor(m / 60); return h ? h + ' hr ' + (m % 60) + ' min' : m + ' min'; }
+  function calcField(k, label, hint, min, step) {
+    return '<div class="cf"><label class="lbl" for="calc-' + k + '">' + esc(label) + '</label>' +
+      '<input id="calc-' + k + '" type="number" inputmode="decimal" data-calc="' + k + '" min="' + min + '" step="' + (step || 1) + '" value="' + esc(String(calcIn[k])) + '">' +
+      (hint ? '<div class="cf-h">' + esc(hint) + '</div>' : '') + '</div>';
+  }
+  function renderCalc() {
+    var ex = calcExercises(), groups = {}, order = [];
+    ex.forEach(function (e) { if (!groups[e.sec]) { groups[e.sec] = []; order.push(e.sec); } groups[e.sec].push(e); });
+    var picked = ex.filter(function (e) { return e.id === calcIn.pick; })[0];
+    calcMins = picked ? picked.c.minutes : 0;
+    $('calc').innerHTML =
+      '<p class="muted">How long it takes to climb from a starting tempo to a goal, a step at a time, with a number of clean passes at each tempo.</p>' +
+      '<div class="cf"><label class="lbl" for="calc-pick">Exercise</label><select id="calc-pick">' +
+      '<option value="">Your own numbers</option>' +
+      order.map(function (g) {
+        return '<optgroup label="' + esc(g) + '">' + groups[g].map(function (e) {
+          return '<option value="' + esc(e.id) + '"' + (e.id === calcIn.pick ? ' selected' : '') + '>' + esc(e.c.name) + '</option>';
+        }).join('') + '</optgroup>';
+      }).join('') + '</select><div class="cf-h">Picking one fills in its numbers as the app plays it: its next start, the goal written in it (Goal 115 bpm), its bars and passes, the step and the drop.</div></div>' +
+      '<div class="cgrid">' +
+      calcField('start', 'Start (BPM)', '', 1) + calcField('goal', 'Goal (BPM)', '', 1) +
+      calcField('step', 'Step (BPM)', 'Added after each clean tempo.', 1) + calcField('reps', 'Passes a tempo', 'Clean passes at each tempo.', 1) +
+      calcField('bars', 'Bars a pass', 'Bars of 4/4 in the notes.', 1) + calcField('drop', 'Drop (BPM)', 'Each session starts this far below your best.', 0) +
+      calcField('weeks', 'Weeks', 'To reach the goal.', 0.5, 0.5) + calcField('days', 'Days a week', 'Days you practise this exercise.', 1) +
+      '</div><div id="calcOut" aria-live="polite"></div>' +
+      '<details class="help"><summary>How it is worked out</summary>' +
+      '<p>Each tempo takes passes x bars x 4 beats at that tempo. The total adds that up for every tempo from the start, a step at a time, to the first one at or past the goal. It is close to the formula</p>' +
+      '<pre>minutes = 4 x R x B x ln((G + d/2) / (S - d/2)) / d</pre>' +
+      '<p>with R passes, B bars, start S, goal G and step d (with a 2 BPM step that is 2 x R x B x ln((G+1)/(S-1))). Divided by weeks x days a week, that is the time a day. Time scales with the passes: half the passes, half the time.</p>' +
+      '<p>It counts clean playing only. Mistakes restart the passes, so real sessions take longer.</p></details>';
+    calcOut();
+  }
+  function calcOut() {
+    var r = calcPlan(calcIn), box = $('calcOut');
+    if (!box) return;
+    if (!r) { box.innerHTML = '<p class="nt-err">Give a goal above the start, and numbers above 0 for the step, passes, bars, weeks and days.</p>'; return; }
+    var tile = function (k, v, sub) { return '<div class="stat"><div class="k">' + esc(k) + '</div><div class="v">' + esc(v) + '</div><div class="s">' + esc(sub) + '</div></div>'; };
+    var notes = ['Count-ins and rests between tempos add about ' + minSec(r.overheadSec) + ' in total.'];
+    if (r.climbSec > 0) notes.push('Starting ' + calcIn.drop + ' BPM below your best each session adds about ' + minSec(r.climbDailySec) + ' a session, ' + hrMin(r.climbSec) + ' in total.');
+    if (r.last > calcIn.goal) notes.push('The steps end at ' + r.last + ' BPM, the first tempo past the goal.');
+    if (calcMins) {
+      var need = r.dailySec + r.climbDailySec;
+      notes.push(need > calcMins * 60 + 0.5
+        ? '<span class="warn">This exercise has ' + minSec(calcMins * 60) + ' a session in the week, less than the ' + minSec(need) + ' it needs.</span>'
+        : 'This exercise has ' + minSec(calcMins * 60) + ' a session in the week, enough for the ' + minSec(need) + ' it needs.');
+    }
+    box.innerHTML = '<div class="stats">' +
+      tile('Daily practice', minSec(r.dailySec), r.sessions + (r.sessions === 1 ? ' practice day' : ' practice days')) +
+      tile('Total practice', (Math.round(r.playSec / 6) / 10) + ' min', hrMin(r.playSec) + ' total') +
+      tile('Total clean passes', String(r.cleanReps), r.tempos + ' tempos x ' + calcIn.reps + ' passes') +
+      tile('BPM gain a week', '+' + (Math.round(r.gainPerWeek * 10) / 10), calcIn.start + ' to ' + calcIn.goal + ' BPM') +
+      '</div><ul class="cnotes">' + notes.map(function (n) { return '<li>' + (n.charAt(0) === '<' ? n : esc(n)) + '</li>'; }).join('') + '</ul>';
+  }
+  $('calc').addEventListener('input', function (e) {
+    var k = e.target.dataset.calc;
+    if (!k) return;
+    calcIn[k] = e.target.value === '' ? '' : Number(e.target.value);
+    calcSave();
+    calcOut();
+  });
+  $('calc').addEventListener('change', function (e) {
+    if (e.target.id !== 'calc-pick') return;
+    calcIn.pick = e.target.value;
+    var hit = calcExercises().filter(function (x) { return x.id === calcIn.pick; })[0];
+    if (hit) ['start', 'step', 'reps', 'bars', 'drop'].concat(hit.c.goal ? ['goal'] : []).forEach(function (k) { calcIn[k] = hit.c[k]; });
+    calcSave();
+    renderCalc();
   });
 
   function renderAll() { renderWeek(); renderPractice(); renderLog(); renderMethods(); }
