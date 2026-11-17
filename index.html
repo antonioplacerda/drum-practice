@@ -377,7 +377,7 @@ textarea {
       <p>A line starting with <code>#</code> starts a section. Add the minutes after a comma. Every line under it is an exercise.</p>
       <p>The type of section sets the rules: <code>ladder</code> (the default), <code>routine</code>, or one of your methods from the Methods tab (<code>four-way</code>, <code>groove</code>, <code>kick permutations</code>...). Write it after a comma, or let the section name pick it: a name containing a method's name uses it, Sync uses four-way, Carmine, groove or fill use groove.</p>
       <p>In ladder, four-way and groove sections, a tempo in the exercise line sets where that line starts, instead of the starting tempo in Methods: <code>Timing subdivisions 50 BPM</code>. Coming back to it, it starts below your best clean tempo as usual, but never below that tempo.</p>
-      <p>A routine is a checklist (hand speed, warm-ups). Each line is <code>Name 80 BPM 2 min: details</code>. Tempo and time are optional. With a time the item moves on by itself. With a tempo the metronome plays it after a bar of count-in. After 5 clean passes of the notes (5 x 2 bars for a 2-bar exercise) it rests a second, then plays a new bar of count-in 5 BPM faster. Press Mistake and those 5 passes start again. When the time is up, the pass you are playing finishes first. Next session the item starts 1 BPM above where it started this time. If every item has a time, the section runs for their total.</p>
+      <p>A routine is a checklist (hand speed, warm-ups). Each line is <code>Name 80 BPM 2 min: details</code>. Tempo and time are optional. With a time the item moves on by itself. With a tempo the metronome plays it after a bar of count-in. After 5 clean passes of the notes (5 x 2 bars for a 2-bar exercise) it rests a second, then plays a new bar of count-in 5 BPM faster. Press Mistake and those 5 passes start again. When the time is up, the pass you are playing finishes first, then you choose: Next exercise, or Keep going on this one at the same tempo, with the clean passes you have, until you press Done. Next session the item starts 1 BPM above where it started this time. If every item has a time, the section runs for their total.</p>
       <p>Write <code>ladder</code> in a routine item to play it by ladder rules for its time: <code>Wrist development, ladder, 60 BPM, 7 min: details</code>. It needs 20 clean passes at each tempo (the ladder's reps on the Methods tab), then +5 BPM. Next session it starts 10 BPM below its highest clean tempo, never below the tempo written.</p>
       <p>Write a number of bars in a routine item to set how long it stays on each tempo, ladder or not: <code>Finger dribbling, ladder, 100 BPM, 64 bars, 5 min: details</code>. It plays that many clean bars before going up, rounded up to whole passes of the notes (64 bars of a 4-bar exercise is 16 passes). </p>
       <p>Each routine item can set its own rules before the colon: <code>Wrist development, right hand, ladder, 60 BPM, 10 passes, 2 BPM step, 4 BPM drop, 7 min</code>. <code>10 passes</code> is the clean passes at each tempo (it wins over bars). <code>2 BPM step</code> is what goes on after each clean tempo. <code>4 BPM drop</code> makes the next session start that far below its highest clean tempo, never below the tempo written; a ladder item without one uses the drop on the Methods tab. Its tempo memory follows the exercise name, so changing these, the tempo or the details keeps it.</p>
@@ -482,7 +482,7 @@ SD rlrlrlrl</pre>
   var RAMP = { reps: 5, bpm: 5, next: 1, rest: 1000 };
   function ruleText(type) {
     if (type === 'routine') return 'A checklist. Work down it in order. An item with a time (2 min) moves on by itself, otherwise press Done. An item with a tempo (80 BPM) starts after a bar of count-in. After ' +
-      RAMP.reps + ' clean passes of the notes (' + RAMP.reps + ' x 2 bars for a 2-bar exercise) the click rests a second, then goes up ' + RAMP.bpm + ' BPM after a new bar of count-in. A mistake restarts those passes. When the time is up, the pass you are playing finishes first. Next session it starts ' + RAMP.next + ' BPM above this session\'s start. ' +
+      RAMP.reps + ' clean passes of the notes (' + RAMP.reps + ' x 2 bars for a 2-bar exercise) the click rests a second, then goes up ' + RAMP.bpm + ' BPM after a new bar of count-in. A mistake restarts those passes. When the time is up, the pass you are playing finishes first, then you choose: next exercise, or keep going on this one until you press Done. Next session it starts ' + RAMP.next + ' BPM above this session\'s start. ' +
       'Write ladder in an item (Name, ladder, 60 BPM, 5 min) to play it by ladder rules: ' + CONF.ladder.reps + ' clean passes at each tempo, then +' + CFG.step + ' BPM. Next session it starts ' + CFG.drop + ' BPM below its highest clean tempo, never below the tempo written. ' +
       'Write bars in an item (Name, 60 BPM, 32 bars, 5 min) to set how long it stays on each tempo: that many bars, rounded up to whole passes of the notes. ' +
       'Each item can set its own rules: 10 passes (clean passes at each tempo), 2 BPM step (added after each clean tempo), 4 BPM drop (next session starts this far below its highest clean tempo, never below the tempo written). The click plays every beat unless an item says fade (Name, fade, 60 BPM, 5 min): then it thins out in four equal parts of the passes, all beats, then beat 3 muted, then 2 and 4 muted, then only beat 1, and a mistake brings all beats back.';
@@ -1726,6 +1726,8 @@ SD rlrlrlrl</pre>
     });
   }
   /* time left, or for a routine with items that run until Done, time played */
+  /* an item's time left, or the extra time played past it */
+  function itemClock(l) { return l.extra ? '+' + mmss(l.spent - l.secs * 1000) : mmss(l.secs * 1000 - l.spent); }
   function clockText() { return S.open ? mmss(S.elapsed) : mmss(S.minutes * 60000 - S.elapsed); }
   function mmss(ms) {
     var t = Math.max(0, Math.ceil(ms / 1000));
@@ -2098,16 +2100,18 @@ SD rlrlrlrl</pre>
       '<div class="now"><div class="label">' + esc(l.name) + '</div>' +
       (l.tempo ? '<div class="rt-tempo" id="rtTempo">' + l.tempo + ' BPM</div>' + BPM_ADJ +
         '<div class="ticks" id="ticks" aria-hidden="true">' + new Array(lineReps(l) + 1).join('<span class="tick"></span>') + '</div>' : '') +
-      (l.secs ? '<div class="rt-tempo" id="itclock">' + mmss(l.secs * 1000 - l.spent) + '</div>' : '') +
+      (l.secs ? '<div class="rt-tempo" id="itclock">' + itemClock(l) + '</div>' : '') +
       (l.detail ? '<div class="rt-detail">' + esc(l.detail) + '</div>' : '') +
       (l.pattern ? '<div class="nt" data-nt="live"></div>' : '') +
       '<div class="beats" id="beats" aria-hidden="true"><span class="bd"></span><span class="bd"></span><span class="bd"></span><span class="bd"></span></div>' +
       '<div class="count" id="cnt" aria-live="polite"></div></div>' +
       (l.tempo ? '<div class="clickbox"><div class="cl-h">Subdivision click</div>' + subChips(l.sub, !!(l.pattern && l.pattern.bars)) + '</div>' : '') +
-      '<button class="btn big" data-act="toggle">' + (S.running ? 'Pause' : (S.started ? 'Resume' : 'Start')) + '</button>' +
-      (l.tempo
-        ? '<div class="pair"><button class="btn danger" data-act="miss">Mistake, restart</button><button class="btn primary" data-act="done">Done, next</button></div>'
-        : '<button class="btn primary big" data-act="done" style="margin-top:10px">Done, next</button>') +
+      (S.deciding
+        ? '<div class="pair"><button class="btn" data-act="keep">Keep going</button><button class="btn primary" data-act="nextex">Next exercise</button></div>'
+        : '<button class="btn big" data-act="toggle">' + (S.running ? 'Pause' : (S.started ? 'Resume' : 'Start')) + '</button>' +
+          (l.tempo
+            ? '<div class="pair"><button class="btn danger" data-act="miss">Mistake, restart</button><button class="btn primary" data-act="done">Done, next</button></div>'
+            : '<button class="btn primary big" data-act="done" style="margin-top:10px">Done, next</button>')) +
       '<ul class="lines">' + rows + '</ul>';
     paintNotation();
     updateLive();
@@ -2121,7 +2125,7 @@ SD rlrlrlrl</pre>
       if ($('rtTempo')) $('rtTempo').textContent = rl.tempo + ' BPM';
       /* tally boxes: one per pass of the notes in the current block */
       var rrb = repBeats(rl), playing = S.running && S.phase === 'play';
-      var reps = lineReps(rl), passes = S.running && S.phase === 'rest' ? (S.restFull ? reps : 0) : (playing ? Math.floor(S.k / rrb) : 0);
+      var reps = lineReps(rl), passes = S.deciding ? Math.floor((rl.resumeK || 0) / rrb) : S.running && S.phase === 'rest' ? (S.restFull ? reps : 0) : (playing ? Math.floor(S.k / rrb) : 0);
       var rpct = playing ? ((S.k % rrb) + 1) / rrb * 100 : null;
       var rt = document.querySelectorAll('#ticks .tick');
       for (var t = 0; t < rt.length; t++) {
@@ -2130,8 +2134,9 @@ SD rlrlrlrl</pre>
         if (rcur) rt[t].style.setProperty('--p', rpct.toFixed(1) + '%'); else rt[t].style.removeProperty('--p');
       }
       var rc = $('cnt'), left = S.lines.filter(function (x) { return !x.done; }).length + ' left.';
-      if (rc) rc.textContent = !rl.tempo ? left
-        : (!S.running ? (S.started ? 'Paused. ' : 'Press Start. A bar of count-in comes first. ')
+      if (rc) rc.textContent = S.deciding ? 'Time is up' + (rl.tempo ? ', ' + passes + ' of ' + reps + ' clean passes at ' + rl.tempo + ' BPM' : '') + '. Keep going to push through, or move on. ' + left
+        : !rl.tempo ? (rl.extra ? 'Extra time. Press Done when you are ready. ' : '') + left
+        : (rl.extra && S.running ? 'Extra time, Done moves on. ' : '') + (!S.running ? (S.started ? 'Paused. ' : 'Press Start. A bar of count-in comes first. ')
           : S.phase === 'countin' ? 'Count-in. '
           : S.phase === 'wait' ? 'The ' + reps + ' passes restart on the coming 1' + (rl.fade ? ', all beats back. ' : '. ')
           : S.phase === 'rest' ? 'Rest. A bar of count-in at ' + rl.tempo + ' BPM comes next. '
@@ -2174,7 +2179,7 @@ SD rlrlrlrl</pre>
       S.phase = 'play';
       var k = idx - S.base;
       if (S.type === 'routine') {
-        if (k > 0 && curLine().finishing && k % repBeats(curLine()) === 0) { finishItem(); return; }
+        if (k > 0 && curLine().finishing && k % repBeats(curLine()) === 0) { finishItem(k); return; }
         if (rampBeat(curLine(), k)) {
           S.phase = 'rest'; S.pos = null; S.k = 0; S.restFull = true;
           Click.restThen(RAMP.rest, restartClick);
@@ -2737,12 +2742,14 @@ SD rlrlrlrl</pre>
     } else if (act === 'miss') {
       mistake(S);
       /* time is already up: a broken last pass ends the item instead of starting another */
-      if (S.type === 'routine' && S.running && curLine().finishing) { finishItem(); return; }
+      if (S.type === 'routine' && S.running && curLine().finishing) { finishItem(0); return; }
       if (S.running && S.phase !== 'countin' && S.phase !== 'rest') {
         S.base = resumeBar(S.last);
         S.phase = 'wait';
         S.k = 0;
       }
+    } else if (act === 'keep') { keepGoing(); return;
+    } else if (act === 'nextex') { moveOn(); return;
     } else if (act === 'next') { nextPart('manual'); return;
     } else if (act === 'end') { finishSession('manual'); return; }
     renderPractice();
@@ -2770,13 +2777,38 @@ SD rlrlrlrl</pre>
     renderPractice();
   }
 
-  /* time ran out and the pass being played has just ended: rest a second, then the next item (or the section ends) */
-  function finishItem() {
-    curLine().finishing = false;
+  /* time ran out and the pass being played has just ended (k beats into the clean run, 0 after a mistake): stop and ask, next exercise or keep going */
+  function finishItem(k) {
+    var cl = curLine();
+    cl.finishing = false;
+    /* the last pass of a tempo's clean run: it counts, and Keep going starts at the next tempo */
+    cl.resumeK = k && rampBeat(cl, k) ? 0 : (k || 0);
+    S.running = false; S.phase = 'idle'; S.pos = null; S.k = 0;
+    S.deciding = true;
+    Click.stop();
+    dropWake();
+    renderPractice();
+  }
+  /* Keep going: the same item, no time limit, at the same tempo and with the clean passes already played; the session clock waits meanwhile */
+  function keepGoing() {
+    var cl = curLine();
+    S.deciding = false; cl.extra = true; S.notice = '';
+    S.running = true; S.started = true;
+    Click.bpm = cl.tempo || Click.bpm || 80;
+    Click.start();
+    S.ciEnd = 4; S.base = 4 - (cl.resumeK || 0);
+    S.last = -1; S.pos = null; S.k = cl.resumeK || 0;
+    S.phase = 'countin';
+    holdWake();
+    renderPractice();
+  }
+  /* Next exercise: on to the next item with a bar of count-in, or the section ends when its own time is up */
+  function moveOn() {
+    S.deciding = false;
     if (!S.open && S.elapsed >= S.minutes * 60000) { if (S.queue && S.queue.length) nextPart('time'); else finishSession('time'); return; }
-    S.phase = 'rest'; S.pos = null; S.k = 0; S.restFull = false;
-    Click.restThen(RAMP.rest, restartClick);
+    var sec = S.section;
     routineDone(true);
+    if (!S.finished && S.section === sec) { S.running = true; S.started = true; holdWake(); restartClick(); renderPractice(); }
   }
 
   function partDone() {
@@ -2792,7 +2824,7 @@ SD rlrlrlrl</pre>
     var n = sessionFor(sec, S.latest);
     ['section', 'type', 'minutes', 'open', 'lines', 'active', 'round', 'elapsed'].forEach(function (k) { S[k] = n[k]; });
     S.mask = state.mask.map(Boolean); S.mgroup = null;
-    S.running = false; S.started = false; S.overtime = false; S.ciEnd = S.base = 4; S.last = -1; S.pos = null; S.k = 0; S.phase = 'idle';
+    S.running = false; S.started = false; S.overtime = false; S.deciding = false; S.ciEnd = S.base = 4; S.last = -1; S.pos = null; S.k = 0; S.phase = 'idle';
     S.notice = (reason === 'time' ? 'Time is up on ' : 'Done with ') + prev + '. Next: ' + sec.name + '. Press Start when ready.';
     applyStepMask();
     renderPractice();
@@ -2830,17 +2862,17 @@ SD rlrlrlrl</pre>
       if (S.type === 'routine') {
         var rl = curLine();
         rl.spent = (rl.spent || 0) + dt;
+        /* extra time on an item: the session clock waits, so the items after it keep their time */
+        if (rl.extra && !S.open) S.minutes += dt / 60000;
         var ic = $('itclock');
-        if (ic && rl.secs) ic.textContent = mmss(rl.secs * 1000 - rl.spent);
-        if ((rl.secs && rl.spent >= rl.secs * 1000) || (!S.open && S.elapsed >= S.minutes * 60000)) {
-          /* with a click going, let the pass being played finish (handleBeat ends it); otherwise move on now */
+        if (ic && rl.secs) ic.textContent = itemClock(rl);
+        if (!rl.extra && ((rl.secs && rl.spent >= rl.secs * 1000) || (!S.open && S.elapsed >= S.minutes * 60000))) {
+          /* with a click going, let the pass being played finish (handleBeat ends it); otherwise stop and ask now */
           if (rl.tempo && S.phase === 'play') {
             if (!rl.finishing) { rl.finishing = true; updateLive(); }
           } else if (rl.secs && rl.spent >= rl.secs * 1000) {
             if (Click.ctx) Click.chime(Click.now());
-            S.phase = 'rest'; S.pos = null; S.k = 0; S.restFull = false;
-            Click.restThen(RAMP.rest, restartClick);
-            routineDone(true); tPrev = now; return;
+            finishItem(0); tPrev = now; return;
           }
         }
       }
