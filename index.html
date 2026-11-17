@@ -173,9 +173,10 @@ textarea {
 .sec-rule { color: var(--muted); font-size: 14px; margin: 0 0 6px; }
 .cards { list-style: none; margin: 6px 0 10px; padding: 0; border-top: 1px solid var(--line); }
 .cards li { padding: 11px 2px; border-bottom: 1px solid var(--line); }
-.cards .top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.cards .name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
-.cards .meta { color: var(--muted); font-size: 14px; text-align: right; flex: none; font-variant-numeric: tabular-nums; }
+.cards .top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 12px; }
+/* a long meta drops below the name instead of squeezing it */
+.cards .name { font-weight: 600; flex: 1 1 12em; min-width: 0; overflow-wrap: anywhere; }
+.cards .meta { color: var(--muted); font-size: 14px; text-align: right; flex: 0 1 auto; margin-left: auto; font-variant-numeric: tabular-nums; }
 .cards .empty { color: var(--muted); }
 .rules {
   display: grid;
@@ -193,6 +194,9 @@ textarea {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--accent);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 .rules dd { margin: 0; color: var(--muted); }
 .runbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 4px; }
@@ -252,9 +256,10 @@ textarea {
 .lines button {
   width: 100%;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
-  gap: 12px;
+  gap: 2px 12px;
   padding: 12px 8px;
   background: none;
   border: 0;
@@ -266,8 +271,8 @@ textarea {
 }
 .lines button[aria-current="true"] { border-left-color: var(--accent); background: var(--accent-soft); }
 .lines button:disabled { cursor: default; }
-.lines .name { min-width: 0; overflow-wrap: anywhere; }
-.lines .meta { flex: none; font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.lines .name { flex: 1 1 10em; min-width: 0; overflow-wrap: anywhere; }
+.lines .meta { flex: 0 1 auto; margin-left: auto; font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
 .lines .done .meta { color: var(--good); font-weight: 600; }
 .empty-state { padding: 26px 0; }
 .res { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-variant-numeric: tabular-nums; }
