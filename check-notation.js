@@ -139,3 +139,21 @@ console.log('fade ok');
   assert.strictEqual(L2.newSession(old, { [old.items[0].key]: { last: 70, start: 66, type: 'routine' } }).lines[0].tempo, 67);
 }
 console.log('item settings ok');
+
+// a heading with no type whose items have times is a routine, and adds them up
+{
+  const w = L.parseWeek('# Day 1 hands\nWrist, ladder, 60 BPM, 10 passes, 7 min\nSD r-r-\nDribbling, 100 BPM, 5 min\n\n# Stick Control\nSingles 60 BPM\n\n# Mixed, routine\nA 60 BPM 7 min\nB 60 BPM');
+  assert.deepStrictEqual(w.map(x => [x.name, x.type, x.minutes, x.untimed || 0, !!x.open]), [['Day 1 hands', 'routine', 12, 0, false], ['Stick Control', 'ladder', 10, 0, false], ['Mixed', 'routine', 7, 1, true]]);
+  assert.strictEqual(L.newSession(w[2], {}).open, true);
+  // no item timed: the default, with a clock
+  const none = L.parseWeek('# Warm up, routine\nStretch\nBreathe')[0];
+  assert.deepStrictEqual([none.minutes, !!none.open], [10, false]);
+  // the words the Week tab writes read back: "10 passes a tempo, +2 BPM steps"
+  const L3 = new Function(logic + '; return { splitItem };')();
+  const q = L3.splitItem('Wrist development, right hand, ladder, 60 BPM, 10 passes a tempo, +2 BPM steps, 4 BPM drop, 12 mins: Goal 115 bpm');
+  assert.deepStrictEqual([q.name, q.passes, q.inc, q.drop, q.secs], ['Wrist development right hand', 10, 2, 4, 720]);
+  assert.deepStrictEqual([L3.splitItem('X, 60 BPM, 24 bars per tempo').name, L3.splitItem('X, 60 BPM, 24 bars per tempo').bars], ['X', 24]);
+  // a type in the heading always wins
+  assert.strictEqual(L.parseWeek('# Day 1, ladder\nWrist 60 BPM 7 min')[0].type, 'ladder');
+}
+console.log('routine minutes ok');

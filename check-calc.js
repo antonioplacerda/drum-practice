@@ -50,9 +50,19 @@ assert.strictEqual(L.calcPlan({ start: 120, goal: 80, step: 2, reps: 20, bars: 4
 assert.strictEqual(L.goalOf('Wrist, 60 BPM: Goal 115 bpm. 8ths'), 115);
 const w = L.parseWeek('# Day 1, routine\nFinger dribbling, ladder, 100 BPM, 64 bars, 5 min: Goal 200 bpm.\nSD rrrr|rrrr\nPlain 60 BPM 2 min\n\n# Stick, 10 min\nSingles 50 BPM goal 120 bpm\nSD rlrl');
 let c = L.calcFrom(w[0], w[0].items[0], {});
-assert.deepStrictEqual(c, { name: 'Finger dribbling', start: 100, goal: 200, step: 5, bars: 2, reps: 32, drop: 10, minutes: 5 });
+assert.deepStrictEqual(c, { id: 'Day 1|finger dribbling', name: 'Finger dribbling', start: 100, goal: 200, step: 5, bars: 2, reps: 32, drop: 10, minutes: 5 });
 c = L.calcFrom(w[0], w[0].items[1], {});
 assert.deepStrictEqual([c.reps, c.step, c.drop, c.goal], [5, 5, 0, 0]);
 c = L.calcFrom(w[1], w[1].items[0], {});
 assert.deepStrictEqual([c.name, c.start, c.goal, c.reps, c.bars, c.minutes], ['Singles 50 BPM', 50, 120, 20, 1, 10]);
+// settings and goals written in different ways all read the same
+[
+  'Wrist development, right hand, ladder, 60 BPM, 10 passes, 4 BPM drop, 2 BPM step, 7 min: Goal 115 bpm',
+  'Wrist development, right hand, goal 115 BPM, ladder, 60 BPM, 10 passes, 4 BPM drop, 2 BPM step, 7 min',
+  'Wrist development, right hand, ladder, 60 BPM, 10 clean passes, 4 BPM drops, 2 BPM steps, 7 min: Goal: 115',
+  'Wrist development, right hand, ladder, 60 bpm, 10 reps, drop 4, step 2, 7 min: goal tempo 115',
+].forEach(t => {
+  const wk = L.parseWeek('# A, routine\n' + t + '\nSD r-r-|r-r-|r-r-|r-r-')[0], x = L.calcFrom(wk, wk.items[0], {});
+  assert.deepStrictEqual([x.id, x.name, x.start, x.goal, x.step, x.reps, x.bars, x.drop], ['A|wrist development right hand', 'Wrist development right hand', 60, 115, 2, 10, 4, 4], t);
+});
 console.log('calc ok');

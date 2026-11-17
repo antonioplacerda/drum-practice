@@ -968,7 +968,7 @@ SD rlrlrlrl</pre>
         t = keep.join(',');
         t = t.replace(/[\s,;:()\-]+$/g, '').replace(/^[\s,;:()\-]+/g, '').trim();
         var name = t || 'Exercises';
-        sec = { name: name, minutes: mins, fixedMins: !!mm, type: type || typeFromName(name), items: [] };
+        sec = { name: name, minutes: mins, fixedMins: !!mm, type: type || typeFromName(name), guessed: !type && typeFromName(name) === 'ladder', items: [] };
         sections.push(sec);
         cur = null;
         return;
@@ -1015,10 +1015,15 @@ SD rlrlrlrl</pre>
       return cur;
     }
     sections.forEach(function (s) {
+      /* a heading with no type whose items have their own times is a routine: a ladder section has no use for them */
+      if (s.guessed && s.items.some(function (it) { return splitItem(it.label).secs; })) s.type = 'routine';
+      delete s.guessed;
       if (s.type === 'routine' && !s.fixedMins) {
-        var tot = 0, all = s.items.length > 0;
-        s.items.forEach(function (it) { var sp = splitItem(it.label); if (sp.secs) tot += sp.secs; else all = false; });
-        if (all) s.minutes = Math.max(1, Math.ceil(tot / 60));
+        /* the total adds up the items' times. Items without one run until Done, so with some of those the routine has no end time (open) */
+        var tot = 0, untimed = 0;
+        s.items.forEach(function (it) { var sp = splitItem(it.label); if (sp.secs) tot += sp.secs; else untimed++; });
+        if (untimed < s.items.length) s.minutes = Math.max(1, Math.ceil(tot / 60));
+        if (untimed && untimed < s.items.length) { s.untimed = untimed; s.open = true; }
       }
       s.items.forEach(function (it) {
         if (it.gsError) it.pattern = { error: it.gsError };
@@ -1053,15 +1058,18 @@ SD rlrlrlrl</pre>
 
   /* routine items: "Name 80 BPM 2 min: details". Tempo and time are optional.
      Settings for that item, anywhere before the colon: ladder, fade, 32 bars, 10 passes, 2 BPM step, 4 BPM drop. */
+  /* "Goal 115 bpm", "goal: 115", "goal tempo of 115 BPM" */
+  var GOAL_RE = /\bgoal\b\s*(?:tempo\s*)?(?:of\s*)?:?\s*(\d{2,3})(?:\s*bpm)?/i;
   function splitItem(label) {
     var i = label.indexOf(':'), name = i > 0 ? label.slice(0, i).trim() : label, detail = i > 0 ? label.slice(i + 1).trim() : '';
-    var st = /(\d{1,3})\s*bpm\s*steps?\b|\bsteps?\s*(?:of\s*)?\+?(\d{1,3})(?:\s*bpm)?\b/i.exec(name);
-    var work = st ? name.replace(st[0], ' ') : name;
-    var dr = /(\d{1,3})\s*bpm\s*drop\b|\bdrop\s*(?:of\s*)?(\d{1,3})(?:\s*bpm)?\b/i.exec(work);
+    var gl = GOAL_RE.exec(name), work = gl ? name.replace(gl[0], ' ') : name;
+    var st = /\+?\s*(\d{1,3})\s*bpm\s*steps?\b|\bsteps?\s*(?:of\s*)?\+?(\d{1,3})(?:\s*bpm)?\b/i.exec(work);
+    if (st) work = work.replace(st[0], ' ');
+    var dr = /(\d{1,3})\s*bpm\s*drops?\b|\bdrops?\s*(?:of\s*)?(\d{1,3})(?:\s*bpm)?\b/i.exec(work);
     if (dr) work = work.replace(dr[0], ' ');
     var bm = /(\d{2,3})\s*bpm/i.exec(work), tm = /(\d{1,3})\s*(min\w*|sec\w*|s)\b/i.exec(work);
     var secs = tm ? parseInt(tm[1], 10) * (/^m/i.test(tm[2]) ? 60 : 1) : 0;
-    var lad = /\bladder\b/i.test(work), fade = /\bfade\b/i.test(work), br = /(\d{1,3})\s*(bars?|measures?)\b/i.exec(work), ps = /(\d{1,3})\s*(passes|pass|reps?)\b/i.exec(work);
+    var lad = /\bladder\b/i.test(work), fade = /\bfade\b/i.test(work), br = /(\d{1,3})\s*(?:bars?|measures?)(?:\s+(?:a|per|each|at each)\s+tempo)?\b/i.exec(work), ps = /(\d{1,3})\s*(?:clean\s+)?(?:passes|pass|reps?|repetitions?)(?:\s+(?:a|per|each|at each)\s+tempo)?\b/i.exec(work);
     var clean = work.replace(bm ? bm[0] : '', '').replace(tm ? tm[0] : '', '').replace(br ? br[0] : '', '').replace(ps ? ps[0] : '', '')
       .replace(/\bladder\b/i, '').replace(/\bfade\b/i, '').replace(/[\s,;]+/g, ' ').replace(/[\s,;]+$/, '').trim();
     var num = function (m) { return m ? parseInt(m[1] || m[2], 10) : 0; };
@@ -1069,7 +1077,7 @@ SD rlrlrlrl</pre>
     var sub = /triplet/i.test(name) ? 3 : (/16th|sixteenth/i.test(name) ? 4 : (/8th|eighth/i.test(name) ? 2 : 0));
     return { name: clean || name, detail: detail, tempo: bm ? parseInt(bm[1], 10) : 0, secs: secs, sub: sub, ladder: lad && !!bm, fade: fade && !!bm,
       bars: br && bm ? Math.max(1, parseInt(br[1], 10)) : 0, passes: ps && bm ? Math.max(1, num(ps)) : 0,
-      inc: st && bm ? Math.max(1, num(st)) : 0, drop: dr && bm ? num(dr) : null };
+      inc: st && bm ? Math.max(1, num(st)) : 0, drop: dr && bm ? num(dr) : null, goal: gl ? parseInt(gl[1], 10) : 0 };
   }
   /* tempo memory for a routine item follows its name, so changing its tempo, time, settings or details keeps it. Older entries were kept by the whole line */
   function routineKey(it) { return normKey(splitItem(it.label).name); }
@@ -1113,16 +1121,11 @@ SD rlrlrlrl</pre>
 
   function newSession(section, memory) {
     var type = BASE[section.type] || methodOf(section.type) ? section.type : 'ladder';
-    var minutes = section.minutes;
-    if (type === 'routine') {
-      var tot = 0, all = section.items.length > 0;
-      section.items.forEach(function (it) { var sp = splitItem(it.label); if (sp.secs) tot += sp.secs; else all = false; });
-      if (all) minutes = Math.max(1, Math.ceil(tot / 60));
-    }
     return {
       section: section.name,
       type: type,
-      minutes: minutes,
+      minutes: section.minutes,
+      open: !!section.open,
       lines: section.items.map(function (it) {
         var m = memory[it.key];
         var from = lineTempo(it.label), t = startTempo(m && m.last != null ? m.last : null, type, from);
@@ -1585,7 +1588,7 @@ SD rlrlrlrl</pre>
       formulaSec: 60 * 4 * R * B * Math.log((G + d / 2) / (S - d / 2)) / d
     };
   }
-  function goalOf(label) { var g = /goal\s*:?\s*(\d{2,3})\s*bpm/i.exec(label || ''); return g ? parseInt(g[1], 10) : 0; }
+  function goalOf(label) { var g = GOAL_RE.exec(label || ''); return g ? parseInt(g[1], 10) : 0; }
   /* the calculator's numbers for an exercise in the week, as the app would play it */
   function calcFrom(sec, it, memory) {
     var m = memory[it.key], B = it.pattern && it.pattern.bars ? it.pattern.bars.length : 1;
@@ -1593,11 +1596,11 @@ SD rlrlrlrl</pre>
     if (type === 'routine') {
       var sp = splitItem(it.label), dp = itemDrop(sp);
       if (!sp.tempo) return null;
-      return { name: sp.name, start: routineStart(sp, routineMem(memory, it)), goal: goalOf(it.label), step: sp.inc || (sp.ladder ? CFG.step : RAMP.bpm), bars: B,
+      return { id: sec.name + '|' + routineKey(it), name: sp.name, start: routineStart(sp, routineMem(memory, it)), goal: sp.goal || goalOf(sp.detail), step: sp.inc || (sp.ladder ? CFG.step : RAMP.bpm), bars: B,
         reps: sp.passes || (sp.bars ? Math.max(1, Math.ceil(sp.bars / B)) : (sp.ladder ? CONF.ladder.reps : RAMP.reps)), drop: dp != null ? dp : 0, minutes: sp.secs / 60 };
     }
     var reps = buildSteps(type).reduce(function (a, st) { return a + (st.reps || CONF.ladder.reps); }, 0);
-    return { name: it.label.replace(/,?\s*goal\s*:?\s*\d{2,3}\s*bpm/i, '').trim(), start: startTempo(m && m.last != null ? m.last : null, type, lineTempo(it.label)), goal: goalOf(it.label),
+    return { id: sec.name + '|' + it.key, name: it.label.replace(GOAL_RE, '').replace(/[\s,;]+$/, '').trim(), start: startTempo(m && m.last != null ? m.last : null, type, lineTempo(it.label)), goal: goalOf(it.label),
       step: CFG.step, bars: B, reps: reps, drop: CFG.drop, minutes: sec.items.length ? sec.minutes / sec.items.length : 0 };
   }
   /* LOGIC END */
@@ -1722,6 +1725,8 @@ SD rlrlrlrl</pre>
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+  /* time left, or for a routine with items that run until Done, time played */
+  function clockText() { return S.open ? mmss(S.elapsed) : mmss(S.minutes * 60000 - S.elapsed); }
   function mmss(ms) {
     var t = Math.max(0, Math.ceil(ms / 1000));
     return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
@@ -1951,9 +1956,11 @@ SD rlrlrlrl</pre>
         return '<li><div class="top"><span class="name">' + esc(it.label) + '</span><span class="meta">' + note + '</span></div>' +
           (it.pattern ? '<div class="nt" data-nt="' + id + '"></div>' : '') + '</li>';
       }).join('');
-      return '<div class="sec"><div class="sec-head"><h2>' + esc(sec.name) + '</h2><span class="mins">' + sec.minutes + ' min, ' + T.label.toLowerCase() + '</span></div>' +
+      return '<div class="sec"><div class="sec-head"><h2>' + esc(sec.name) + '</h2><span class="mins">' + sec.minutes + (sec.open ? '+' : '') + ' min, ' + T.label.toLowerCase() + '</span></div>' +
         '<label class="pick"><input type="checkbox" data-pick="' + si + '"' + (skipSec[sec.name] ? '' : ' checked') + '> In today\'s session</label>' +
         '<p class="sec-rule">' + esc(ruleText(sec.type)) + '</p>' +
+        (sec.untimed ? '<p class="muted">' + sec.untimed + (sec.untimed === 1 ? ' item has' : ' items have') + ' no time and ' + (sec.untimed === 1 ? 'runs' : 'run') +
+          ' until you press Done, so this routine takes ' + sec.minutes + ' min plus that time.</p>' : '') +
         '<ul class="cards">' + items + '</ul>' +
         '<button class="btn big" data-start="' + si + '">Start only ' + esc(sec.name) + '</button></div>';
     }).join('');
@@ -1970,7 +1977,7 @@ SD rlrlrlrl</pre>
     var el = $('planTxt'), btn = document.querySelector('[data-startall]');
     var ps = pickedSections();
     var mins = ps.reduce(function (a, x) { return a + x.minutes; }, 0);
-    if (el) el.textContent = ps.length ? ps.map(function (x) { return x.name + ' ' + x.minutes + ' min'; }).join(', then ') + '. ' + mins + ' min in total.' : 'Tick at least one section below.';
+    if (el) el.textContent = ps.length ? ps.map(function (x) { return x.name + ' ' + x.minutes + (x.open ? '+' : '') + ' min'; }).join(', then ') + '. ' + mins + (ps.some(function (x) { return x.open; }) ? '+' : '') + ' min in total.' : 'Tick at least one section below.';
     if (btn) btn.disabled = !ps.length;
   }
 
@@ -2035,7 +2042,7 @@ SD rlrlrlrl</pre>
       (S.notice ? '<div class="notice">' + esc(S.notice) + '</div>' : '') +
       '<div class="secname">' + esc(S.section) + '<span class="ty">' + esc(T.label) +
       (S.total > 1 ? ', part ' + (S.done.length + 1) + ' of ' + S.total : '') + '</span></div>' +
-      '<div class="runbar"><div class="clock" id="clock">' + mmss(S.minutes * 60000 - S.elapsed) + '</div>' +
+      '<div class="runbar"><div class="clock" id="clock">' + clockText() + '</div>' +
       '<span>' + (S.queue && S.queue.length ? '<button class="btn small" data-act="next">Next: ' + esc(S.queue[0].name) + '</button> ' : '') +
       '<button class="btn small" data-act="end">End session</button></span></div>' +
       '<div class="now"><div class="label">' + esc(l.label) + '</div>' + stepLabel +
@@ -2085,7 +2092,7 @@ SD rlrlrlrl</pre>
     box.innerHTML =
       (S.notice ? '<div class="notice">' + esc(S.notice) + '</div>' : '') +
       '<div class="secname">' + esc(S.section) + '<span class="ty">Routine' + (S.total > 1 ? ', part ' + (S.done.length + 1) + ' of ' + S.total : '') + '</span></div>' +
-      '<div class="runbar"><div class="clock" id="clock">' + mmss(S.minutes * 60000 - S.elapsed) + '</div>' +
+      '<div class="runbar"><div class="clock" id="clock">' + clockText() + '</div>' +
       '<span>' + (S.queue && S.queue.length ? '<button class="btn small" data-act="next">Next: ' + esc(S.queue[0].name) + '</button> ' : '') +
       '<button class="btn small" data-act="end">End session</button></span></div>' +
       '<div class="now"><div class="label">' + esc(l.name) + '</div>' +
@@ -2433,7 +2440,7 @@ SD rlrlrlrl</pre>
   function calcExercises() {
     var out = [];
     parseWeek($('weekText').value).forEach(function (sec) {
-      sec.items.forEach(function (it) { var c = calcFrom(sec, it, state.memory); if (c) out.push({ id: sec.name + '|' + it.key, sec: sec.name, c: c }); });
+      sec.items.forEach(function (it) { var c = calcFrom(sec, it, state.memory); if (c) out.push({ id: c.id, sec: sec.name, c: c }); });
     });
     return out;
   }
@@ -2447,6 +2454,9 @@ SD rlrlrlrl</pre>
   function renderCalc() {
     var ex = calcExercises(), groups = {}, order = [];
     ex.forEach(function (e) { if (!groups[e.sec]) { groups[e.sec] = []; order.push(e.sec); } groups[e.sec].push(e); });
+    /* a picked exercise always shows what the week says now */
+    var hit = ex.filter(function (e) { return e.id === calcIn.pick; })[0];
+    if (hit) calcFill(hit.c); else calcIn.pick = '';
     $('calc').innerHTML =
       '<p class="muted">How long it takes to climb from a starting tempo to a goal, a step at a time, with a number of clean passes at each tempo.</p>' +
       '<div class="cf"><label class="lbl" for="calc-pick">Exercise</label><select id="calc-pick">' +
@@ -2455,7 +2465,7 @@ SD rlrlrlrl</pre>
         return '<optgroup label="' + esc(g) + '">' + groups[g].map(function (e) {
           return '<option value="' + esc(e.id) + '"' + (e.id === calcIn.pick ? ' selected' : '') + '>' + esc(e.c.name) + '</option>';
         }).join('') + '</optgroup>';
-      }).join('') + '</select><div class="cf-h">Picking one fills in its numbers as the app plays it: its next start, the goal written in it (Goal 115 bpm), its bars and passes, the step and the drop.</div></div>' +
+      }).join('') + '</select><div class="cf-h">Picking one fills in its numbers as the app plays it, and keeps them in step with the week: its next start, the goal written in it (Goal 115 bpm), its passes or bars, the step and the drop. Changing one of those makes them your own numbers.</div></div>' +
       '<div class="cgrid">' +
       calcField('start', 'Start (BPM)', '', 1) + calcField('goal', 'Goal (BPM)', '', 1) +
       calcField('step', 'Step (BPM)', 'Added after each clean tempo.', 1) + calcField('reps', 'Passes a tempo', 'Clean passes at each tempo.', 1) +
@@ -2488,18 +2498,20 @@ SD rlrlrlrl</pre>
       tile('BPM gain a week', '+' + (Math.round(r.gainPerWeek * 10) / 10), calcIn.start + ' to ' + calcIn.goal + ' BPM in ' + (Math.round(r.weeks * 10) / 10) + (r.weeks === 1 ? ' week' : ' weeks')) +
       '</div><ul class="cnotes">' + notes.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
   }
+  var CALC_EX = ['start', 'goal', 'step', 'reps', 'bars', 'drop'];
+  function calcFill(c) { CALC_EX.forEach(function (k) { if (k !== 'goal' || c.goal) calcIn[k] = c[k]; }); calcSave(); }
   $('calc').addEventListener('input', function (e) {
     var k = e.target.dataset.calc;
     if (!k) return;
     calcIn[k] = e.target.value === '' ? '' : Number(e.target.value);
+    /* changing an exercise's own numbers makes them your own; weeks, days and the buffer keep the exercise */
+    if (CALC_EX.indexOf(k) >= 0 && calcIn.pick) { calcIn.pick = ''; $('calc-pick').value = ''; }
     calcSave();
     calcOut();
   });
   $('calc').addEventListener('change', function (e) {
     if (e.target.id !== 'calc-pick') return;
     calcIn.pick = e.target.value;
-    var hit = calcExercises().filter(function (x) { return x.id === calcIn.pick; })[0];
-    if (hit) ['start', 'step', 'reps', 'bars', 'drop'].concat(hit.c.goal ? ['goal'] : []).forEach(function (k) { calcIn[k] = hit.c[k]; });
     calcSave();
     renderCalc();
   });
@@ -2761,7 +2773,7 @@ SD rlrlrlrl</pre>
   /* time ran out and the pass being played has just ended: rest a second, then the next item (or the section ends) */
   function finishItem() {
     curLine().finishing = false;
-    if (S.elapsed >= S.minutes * 60000) { if (S.queue && S.queue.length) nextPart('time'); else finishSession('time'); return; }
+    if (!S.open && S.elapsed >= S.minutes * 60000) { if (S.queue && S.queue.length) nextPart('time'); else finishSession('time'); return; }
     S.phase = 'rest'; S.pos = null; S.k = 0; S.restFull = false;
     Click.restThen(RAMP.rest, restartClick);
     routineDone(true);
@@ -2778,7 +2790,7 @@ SD rlrlrlrl</pre>
     Click.stop(); dropWake();
     var prev = S.section, sec = S.queue.shift();
     var n = sessionFor(sec, S.latest);
-    ['section', 'type', 'minutes', 'lines', 'active', 'round', 'elapsed'].forEach(function (k) { S[k] = n[k]; });
+    ['section', 'type', 'minutes', 'open', 'lines', 'active', 'round', 'elapsed'].forEach(function (k) { S[k] = n[k]; });
     S.mask = state.mask.map(Boolean); S.mgroup = null;
     S.running = false; S.started = false; S.overtime = false; S.ciEnd = S.base = 4; S.last = -1; S.pos = null; S.k = 0; S.phase = 'idle';
     S.notice = (reason === 'time' ? 'Time is up on ' : 'Done with ') + prev + '. Next: ' + sec.name + '. Press Start when ready.';
@@ -2820,7 +2832,7 @@ SD rlrlrlrl</pre>
         rl.spent = (rl.spent || 0) + dt;
         var ic = $('itclock');
         if (ic && rl.secs) ic.textContent = mmss(rl.secs * 1000 - rl.spent);
-        if ((rl.secs && rl.spent >= rl.secs * 1000) || S.elapsed >= S.minutes * 60000) {
+        if ((rl.secs && rl.spent >= rl.secs * 1000) || (!S.open && S.elapsed >= S.minutes * 60000)) {
           /* with a click going, let the pass being played finish (handleBeat ends it); otherwise move on now */
           if (rl.tempo && S.phase === 'play') {
             if (!rl.finishing) { rl.finishing = true; updateLive(); }
@@ -2833,8 +2845,8 @@ SD rlrlrlrl</pre>
         }
       }
       var clock = $('clock');
-      if (clock) clock.textContent = mmss(S.minutes * 60000 - S.elapsed);
-      if (S.elapsed >= S.minutes * 60000 && !(S.type === 'routine' && curLine().finishing)) {
+      if (clock) clock.textContent = clockText();
+      if (!S.open && S.elapsed >= S.minutes * 60000 && !(S.type === 'routine' && curLine().finishing)) {
         if (isComfy(S.type) || (S.type !== 'routine' && curLine().count > 0)) {
           if (!S.overtime) {
             S.overtime = true;
