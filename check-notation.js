@@ -2,7 +2,7 @@
 const assert = require('assert');
 const src = require('fs').readFileSync(__dirname + '/index.html', 'utf8');
 const logic = src.slice(src.indexOf('/* LOGIC START */'), src.indexOf('/* LOGIC END */'));
-const L = new Function(logic + '; return { parseWeek, gsToRows, gsLink, renderStaff, buildVoice, restsShown, newSession, results, applyResults, startTempo };')();
+const L = new Function(logic + '; return { parseWeek, gsToRows, gsLink, renderStaff, buildVoice, restsShown, newSession, results, applyResults, startTempo, planCsv, vidTime, vidSecs };')();
 
 function pat(text) { return L.parseWeek('# Grooves, groove\nX\n' + text)[0].items[0].pattern; }
 function hit(p, lane, pos) { return p.bars[0].hits.find(h => h.lane === lane && h.pos === pos); }
@@ -157,3 +157,22 @@ console.log('item settings ok');
   assert.strictEqual(L.parseWeek('# Day 1, ladder\nWrist 60 BPM 7 min')[0].type, 'ladder');
 }
 console.log('routine minutes ok');
+
+// session timeline -> drumcoach plan
+{
+  assert.deepStrictEqual([L.vidTime(7), L.vidTime(75.4), L.vidTime(3725)], ['0:07', '1:15', '1:02:05']);
+  assert.deepStrictEqual([L.vidSecs(''), L.vidSecs('0:07'), L.vidSecs('1:02:05'), L.vidSecs('12.5'), isNaN(L.vidSecs('abc'))], [0, 7, 3725, 12.5, true]);
+  const tl = { segs: [{ t0: 0, t1: 62.3, label: 'Wrist right' }, { t0: 64, t1: 130, label: 'Groove p20, line 1\n(Right foot)' }] };
+  const csv = L.planCsv(tl, 7, 'today').split('\n');
+  assert.ok(csv[0].startsWith('#') && csv[1].startsWith('#'));
+  assert.deepStrictEqual(csv.slice(2), ['0:07,1:09,Wrist right', '1:11,2:17,Groove p20, line 1 (Right foot)', '']);
+}
+console.log('timeline ok');
+
+// no two functions share a name (a later one silently replaces the earlier)
+{
+  const names = [...src.matchAll(/\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
+  const dup = names.filter((n, i) => names.indexOf(n) !== i);
+  assert.deepStrictEqual(dup, [], 'duplicate function names: ' + dup.join(', '));
+}
+console.log('names ok');

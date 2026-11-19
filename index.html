@@ -289,6 +289,7 @@ textarea {
 .session .when { font-family: var(--display); font-weight: 700; font-size: 20px; letter-spacing: 0.04em; text-transform: uppercase; }
 .session ul { margin: 6px 0 0; padding: 0; list-style: none; font-size: 15px; font-variant-numeric: tabular-nums; }
 .session .note { margin: 6px 0 0; color: var(--muted); font-size: 15px; overflow-wrap: anywhere; }
+.session .tlx { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .foot { margin-top: 26px; color: var(--muted); font-size: 13px; }
 
 /* methods */
@@ -1608,6 +1609,30 @@ SD rlrlrlrl</pre>
     return { id: sec.name + '|' + it.key, name: it.label.replace(GOAL_RE, '').replace(/[\s,;]+$/, '').trim(), start: startTempo(m && m.last != null ? m.last : null, type, lineTempo(it.label)), goal: goalOf(it.label),
       step: CFG.step, bars: B, reps: reps, drop: CFG.drop, minutes: sec.items.length ? sec.minutes / sec.items.length : 0 };
   }
+  /* ---------- session timeline, for analysing a video of the session ---------- */
+  /* seconds as m:ss, or h:mm:ss from an hour */
+  function vidTime(sec) {
+    var x = Math.max(0, Math.round(sec)), h = Math.floor(x / 3600), m = Math.floor(x % 3600 / 60), s2 = x % 60;
+    return (h ? h + ':' + (m < 10 ? '0' : '') : '') + m + ':' + (s2 < 10 ? '0' : '') + s2;
+  }
+  /* "m:ss" or "h:mm:ss" (or plain seconds) to seconds, NaN if unreadable */
+  function vidSecs(txt) {
+    var t = String(txt || '').trim();
+    if (!t) return 0;
+    if (!/^\d+(:\d{1,2}){0,2}(\.\d+)?$/.test(t)) return NaN;
+    return t.split(':').reduce(function (a, p) { return a * 60 + parseFloat(p); }, 0);
+  }
+  /* drumcoach's --plan file: one "start,end,name" line per exercise, in video time.
+     tl times count from the first click; offset is where that click is in the video. */
+  function planCsv(tl, offset, when) {
+    var off = offset || 0;
+    return '# drum-practice session' + (when ? ' ' + when : '') + '. Times in the video, first click at ' + vidTime(off) + '.\n' +
+      '# drumcoach analyze VIDEO --plan THIS_FILE\n' +
+      tl.segs.map(function (g) {
+        return vidTime(g.t0 + off) + ',' + vidTime(g.t1 + off) + ',' + String(g.label).replace(/[\r\n]+/g, ' ').trim();
+      }).join('\n') + '\n';
+  }
+
   /* LOGIC END */
 
   /* ---------- state and storage ---------- */
@@ -1799,9 +1824,14 @@ SD rlrlrlrl</pre>
       this.gen++;
       this.beat = 0;
       this.next = this.now() + 0.1;
+      this.runBpm = this.bpm;
+      if (this.onRun) this.onRun(this.next, this.bpm);
       this.timer = setInterval(function () { self.tick(); }, 25);
     },
-    stop: function () { clearInterval(this.timer); this.timer = null; this.gen++; },
+    stop: function () {
+      if (this.timer && this.onRun) this.onRun(this.now(), 0);
+      clearInterval(this.timer); this.timer = null; this.gen++;
+    },
     /* stop, then call cb after ms unless the click was started or stopped again in the meantime */
     restThen: function (ms, cb) {
       var self = this;
@@ -1812,12 +1842,13 @@ SD rlrlrlrl</pre>
     tick: function () {
       while (this.next < this.now() + 0.12) {
         var idx = this.beat, when = this.next, sub = (this.subFor && this.subFor(idx)) || this.sub;
+        if (this.bpm !== this.runBpm) { this.runBpm = this.bpm; if (this.onRun) this.onRun(when, this.bpm); }
         if (this.ctx && this.chimeFor && this.chimeFor(idx)) this.chime(when);
         else if (this.ctx && (!this.audible || this.audible(idx))) {
           this.blip(when, idx % 4 === 0);
           for (var k = 1; k < sub; k++) this.blip(when + k * 60 / this.bpm / sub, false, true, !!(this.accFor && this.accFor(idx, k, sub)));
         }
-        if (this.onBeat) this.onBeat(idx, when, this.gen);
+        if (this.onBeat) this.onBeat(idx, when, this.gen, this.bpm);
         this.next += 60 / this.bpm;
         this.beat++;
       }
@@ -1862,6 +1893,7 @@ SD rlrlrlrl</pre>
 
   /* ---------- views ---------- */
   var S = null;
+  var vidOff = '';
   var tab = 'week';
   var sections = [];
 
@@ -1922,13 +1954,66 @@ SD rlrlrlrl</pre>
     if (isComfy(S.type) || l.done) return false;
     return l.count + 1 >= curStep(l).reps;
   };
-  Click.onBeat = function (idx, when, gen) {
+  Click.onBeat = function (idx, when, gen, bpm) {
     var ms = Math.max(0, (when - Click.now()) * 1000);
     setTimeout(function () {
       if (gen !== Click.gen || !S || !S.running || S.finished) return;
+      tlBeat(when, bpm);
       handleBeat(idx);
     }, ms);
   };
+
+  /* ---------- session timeline ----------
+     Times in seconds from the session's first click, on the audio clock. segs: one per stretch of an exercise
+     (a way of a method counts as its own), with its mistakes. clicks: each start, tempo change and stop (bpm 0). */
+  function newTimeline() { return { origin: null, startedAt: null, segs: [], clicks: [] }; }
+  Click.onRun = function (t, bpm) {
+    var tl = S && S.tl;
+    if (!tl || S.finished) return;
+    if (tl.origin == null) {
+      if (!bpm) return;
+      tl.origin = t;
+      tl.startedAt = new Date(Date.now() + (t - Click.now()) * 1000).toISOString();
+    }
+    tl.clicks.push({ t: t - tl.origin, bpm: bpm });
+  };
+  function segLabel(l) {
+    var name = l.name || l.label, st = l.steps && l.steps.length > 1 ? curStep(l) : null;
+    return st && st.label ? name + ' (' + st.label + ')' : name;
+  }
+  function tlBeat(when, bpm) {
+    var tl = S.tl;
+    if (!tl || tl.origin == null) return;
+    var l = curLine(), t = when - tl.origin, end = t + 60 / (bpm || Click.bpm);
+    var key = S.section + '|' + S.active + '|' + (l.step || 0), g = tl.segs[tl.segs.length - 1];
+    if (g && g.key === key && t - g.t1 < 3) { g.t1 = end; g.bpm1 = bpm; return; }
+    tl.segs.push({ key: key, section: S.section, label: segLabel(l), t0: t, t1: end, bpm0: bpm, bpm1: bpm, miss: [] });
+  }
+  function tlMistake() {
+    var tl = S.tl, g = tl && tl.segs[tl.segs.length - 1];
+    if (g && S.running) g.miss.push(Click.now() - tl.origin);
+  }
+  /* what a saved session keeps: times to the millisecond */
+  function tlSaved(tl) {
+    if (!tl || !tl.segs.length) return null;
+    var r = function (x) { return Math.round(x * 1000) / 1000; };
+    return { v: 1, startedAt: tl.startedAt,
+      segs: tl.segs.map(function (g) { return { t0: r(g.t0), t1: r(g.t1), section: g.section, label: g.label, bpm0: g.bpm0, bpm1: g.bpm1, miss: g.miss.map(r) }; }),
+      clicks: tl.clicks.map(function (c) { return { t: r(c.t), bpm: c.bpm }; }) };
+  }
+  function fileStamp(ts) {
+    var d = new Date(ts), z = function (n) { return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + '-' + z(d.getHours()) + z(d.getMinutes());
+  }
+  function downloadText(name, text, type) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: type }));
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
 
   function setTab(name) {
     tab = name;
@@ -2287,7 +2372,7 @@ SD rlrlrlrl</pre>
         '<button class="btn small" data-forget="' + esc(k) + '">Forget</button></li>';
     }).join('') + '</ul>' : '<p class="muted">Exercises you finish a clean run on appear here with their next starting tempo.</p>';
 
-    var sess = state.sessions.length ? state.sessions.map(function (s) {
+    var sess = state.sessions.length ? state.sessions.map(function (s, si) {
       var d = new Date(s.ts).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
       var total = 0, counted = false;
       var lines = (s.results || []).map(function (r) {
@@ -2300,10 +2385,16 @@ SD rlrlrlrl</pre>
       return '<article class="session"><div class="when">' + esc(d) + (s.section ? ' / ' + esc(s.section) : '') + ' <span class="muted">' +
         Math.max(1, Math.round((s.seconds || 0) / 60)) + ' min' + (counted ? ', ' + total + (total === 1 ? ' mistake' : ' mistakes') : '') +
         '</span></div><ul>' + lines + '</ul>' +
-        (s.note ? '<p class="note">' + esc(s.note) + '</p>' : '') + '</article>';
+        (s.note ? '<p class="note">' + esc(s.note) + '</p>' : '') +
+        (s.timeline ? '<div class="row tlx"><button class="btn small" data-plan="' + si + '">drumcoach plan</button><button class="btn small" data-tl="' + si + '">Timeline</button></div>' : '') +
+        '</article>';
     }).join('') : '<p class="muted">Finished sessions show up here.</p>';
 
-    $('log').innerHTML = '<h2>Tempo memory</h2>' + mem + '<h2>Sessions</h2>' + sess;
+    var anyTl = state.sessions.some(function (s) { return s.timeline; });
+    var vid = anyTl ? '<div class="cf"><label class="lbl" for="vidOff">First click in the video at</label>' +
+      '<input id="vidOff" type="text" inputmode="decimal" placeholder="0:00" value="' + esc(vidOff) + '">' +
+      '<div class="cf-h">For the drumcoach plan of a filmed session: where the first click of the session is in the video (m:ss). The plan names each exercise and its times in the video: drumcoach analyze VIDEO --plan PLAN. Timeline is every exercise, tempo change and mistake, in seconds from the first click.</div></div>' : '';
+    $('log').innerHTML = '<h2>Tempo memory</h2>' + mem + '<h2>Sessions</h2>' + vid + sess;
   }
 
   function renderRules() {
@@ -2652,6 +2743,7 @@ SD rlrlrlrl</pre>
     S = sessionFor(list[0], latest);
     S.list = list; S.latest = latest;
     S.queue = list.slice(1); S.done = []; S.total = list.length; S.notice = '';
+    S.tl = newTimeline();
     S.mask = state.mask.map(Boolean);
     S.started = false;
     S.ciEnd = S.base = 4;
@@ -2760,6 +2852,7 @@ SD rlrlrlrl</pre>
       if (S.running) restartCountIn();
     } else if (act === 'miss') {
       mistake(S);
+      tlMistake();
       /* time is already up: a broken last pass ends the item instead of starting another */
       if (S.type === 'routine' && S.running && curLine().finishing) { finishItem(0); return; }
       if (S.running && S.phase !== 'countin' && S.phase !== 'rest') {
@@ -2774,7 +2867,19 @@ SD rlrlrlrl</pre>
     renderPractice();
   });
 
+  $('log').addEventListener('input', function (e) { if (e.target.id === 'vidOff') vidOff = e.target.value; });
   $('log').addEventListener('click', function (e) {
+    var pb = e.target.closest('[data-plan]'), tb = e.target.closest('[data-tl]');
+    if (pb || tb) {
+      var ss = state.sessions[Number((pb || tb).dataset[pb ? 'plan' : 'tl'])];
+      if (!ss || !ss.timeline) return;
+      var name = 'drum-practice-' + fileStamp(ss.ts);
+      if (tb) { downloadText(name + '.timeline.json', JSON.stringify(ss.timeline, null, 1), 'application/json'); return; }
+      var off = vidSecs(vidOff);
+      if (isNaN(off)) { alert('Write the first click\'s time in the video as m:ss, for example 0:07.'); return; }
+      downloadText(name + '.plan.csv', planCsv(ss.timeline, off, new Date(ss.ts).toLocaleString()), 'text/csv');
+      return;
+    }
     var f = e.target.closest('[data-forget]');
     if (!f) return;
     delete state.memory[f.dataset.forget];
@@ -2867,6 +2972,8 @@ SD rlrlrlrl</pre>
     S.done.forEach(function (p) { res = res.concat(p.results); secs += p.seconds; applyResults(state.memory, p.results, p.type); });
     state.sessions.unshift({ ts: Date.now(), section: S.done.map(function (p) { return p.section; }).join(' + '),
       type: S.done.length === 1 ? S.done[0].type : 'mixed', seconds: secs, results: res, note: note });
+    var tls = tlSaved(S.tl);
+    if (tls) state.sessions[0].timeline = tls;
     S = null;
     save();
     renderAll();
