@@ -1871,6 +1871,7 @@ SD rlrlrlrl</pre>
     /* accent: the bar's downbeat. soft: a click between the beats, a little louder (but still lower than a beat) on an accented note */
     blip: function (t, accent, soft, loud) {
       var o = this.ctx.createOscillator(), g = this.ctx.createGain();
+      /* drumcoach lines a session's timeline up with a video by these pitches (the count-in: 1100, then 760): keep them */
       o.frequency.value = soft ? 520 : (accent ? 1100 : 760);
       g.gain.setValueAtTime(0.0001, t);
       g.gain.exponentialRampToValueAtTime(soft ? (loud ? 0.26 : 0.13) : (accent ? 0.5 : 0.32), t + 0.002);
@@ -2386,14 +2387,15 @@ SD rlrlrlrl</pre>
         Math.max(1, Math.round((s.seconds || 0) / 60)) + ' min' + (counted ? ', ' + total + (total === 1 ? ' mistake' : ' mistakes') : '') +
         '</span></div><ul>' + lines + '</ul>' +
         (s.note ? '<p class="note">' + esc(s.note) + '</p>' : '') +
-        (s.timeline ? '<div class="row tlx"><button class="btn small" data-plan="' + si + '">drumcoach plan</button><button class="btn small" data-tl="' + si + '">Timeline</button></div>' : '') +
+        (s.timeline ? '<div class="row tlx"><button class="btn small" data-tl="' + si + '">Timeline</button><button class="btn small" data-plan="' + si + '">drumcoach plan</button></div>' : '') +
         '</article>';
     }).join('') : '<p class="muted">Finished sessions show up here.</p>';
 
     var anyTl = state.sessions.some(function (s) { return s.timeline; });
-    var vid = anyTl ? '<div class="cf"><label class="lbl" for="vidOff">First click in the video at</label>' +
+    var vid = anyTl ? '<p class="muted">For a filmed session, download its Timeline and run drumcoach analyze VIDEO --timeline TIMELINE. It lines the beats up with the video by itself and times beats the click muted too.</p>' +
+      '<div class="cf"><label class="lbl" for="vidOff">First click in the video at</label>' +
       '<input id="vidOff" type="text" inputmode="decimal" placeholder="0:00" value="' + esc(vidOff) + '">' +
-      '<div class="cf-h">For the drumcoach plan of a filmed session: where the first click of the session is in the video (m:ss). The plan names each exercise and its times in the video: drumcoach analyze VIDEO --plan PLAN. Timeline is every exercise, tempo change and mistake, in seconds from the first click.</div></div>' : '';
+      '<div class="cf-h">Only for the drumcoach plan, the older way: where the first click of the session is in the video (m:ss). Then drumcoach analyze VIDEO --plan PLAN.</div></div>' : '';
     $('log').innerHTML = '<h2>Tempo memory</h2>' + mem + '<h2>Sessions</h2>' + vid + sess;
   }
 
