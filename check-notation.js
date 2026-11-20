@@ -2,7 +2,7 @@
 const assert = require('assert');
 const src = require('fs').readFileSync(__dirname + '/index.html', 'utf8');
 const logic = src.slice(src.indexOf('/* LOGIC START */'), src.indexOf('/* LOGIC END */'));
-const L = new Function(logic + '; return { parseWeek, gsToRows, gsLink, renderStaff, buildVoice, restsShown, newSession, results, applyResults, startTempo, planCsv, vidTime, vidSecs };')();
+const L = new Function(logic + '; return { parseWeek, gsToRows, gsLink, renderStaff, buildVoice, restsShown, newSession, results, applyResults, startTempo, planCsv, vidTime, vidSecs, mistake, addRep };')();
 
 function pat(text) { return L.parseWeek('# Grooves, groove\nX\n' + text)[0].items[0].pattern; }
 function hit(p, lane, pos) { return p.bars[0].hits.find(h => h.lane === lane && h.pos === pos); }
@@ -176,3 +176,28 @@ console.log('timeline ok');
   assert.deepStrictEqual(dup, [], 'duplicate function names: ' + dup.join(', '));
 }
 console.log('names ok');
+
+// three mistakes in a row drop the tempo by two steps; again at a tempo already dropped from: rest or move on
+{
+  const sec = L.parseWeek('# Hands, routine\nSingles 80 BPM, 2 BPM step 5 min')[0];
+  const S = L.newSession(sec, {});
+  const l = S.lines[0];
+  assert.strictEqual(l.tempo, 80);
+  assert.strictEqual(L.mistake(S), null);
+  assert.strictEqual(L.mistake(S), null);
+  assert.deepStrictEqual(L.mistake(S), { kind: 'drop', from: 80, to: 76 });
+  // a clean pass in between breaks the run
+  L.mistake(S); L.mistake(S); l.streak = 0; assert.strictEqual(L.mistake(S), null);
+  l.streak = 0;
+  l.tempo = 80;                                        // climbed back
+  L.mistake(S); L.mistake(S);
+  assert.deepStrictEqual(L.mistake(S), { kind: 'warn', from: 80, to: 76 });
+  // a ladder section steps by the ladder's step (5): 10 down
+  const lad = L.newSession(L.parseWeek('# Stick Control\nLine one 60 BPM')[0], {});
+  L.mistake(lad); L.mistake(lad);
+  assert.deepStrictEqual(L.mistake(lad), { kind: 'drop', from: 60, to: 50 });
+  // a clean rep resets the run there too
+  L.mistake(lad); L.mistake(lad); L.addRep(lad, 1);
+  assert.strictEqual(L.mistake(lad), null);
+}
+console.log('three in a row ok');

@@ -1179,6 +1179,7 @@ SD rlrlrlrl</pre>
   function addRep(s, n) {
     var l = s.lines[s.active];
     if (l.done) return null;
+    cleanPass(l);
     if (isComfy(s.type)) { l.count += n; return null; }
     var st = curStep(l);
     l.count = Math.min(st.reps, l.count + n);
@@ -1195,12 +1196,26 @@ SD rlrlrlrl</pre>
     return 'step';
   }
 
+  /* Three mistakes in a row (no clean pass between them) drop the tempo by two of its steps (a 2 BPM step: 4 BPM down).
+     The same again at a tempo it already dropped from: also "rest or move on".
+     Returns null, or {kind: 'drop' | 'warn', from, to} when the tempo dropped. */
+  var STREAK = 3;
   function mistake(s) {
     var l = s.lines[s.active];
     l.mistakes++;
     l.slips[l.step] = (l.slips[l.step] || 0) + 1;
     l.count = 0;
+    if (!l.tempo) return null;
+    l.streak = (l.streak || 0) + 1;
+    if (l.streak < STREAK) return null;
+    l.streak = 0;
+    var from = l.tempo, again = (l.dropped || []).indexOf(from) >= 0;
+    (l.dropped = l.dropped || []).push(from);
+    l.tempo = Math.max(30, from - 2 * (s.type === 'routine' ? lineStep(l) : CFG.step));
+    return { kind: again ? 'warn' : 'drop', from: from, to: l.tempo };
   }
+  /* a clean pass (or rep) breaks a run of mistakes */
+  function cleanPass(l) { l.streak = 0; }
 
   function results(s) {
     if (s.type === 'routine') {
@@ -2283,6 +2298,7 @@ SD rlrlrlrl</pre>
       S.phase = 'play';
       var k = idx - S.base;
       if (S.type === 'routine') {
+        if (k > 0 && k % repBeats(curLine()) === 0) passDone();
         if (k > 0 && curLine().finishing && k % (lineReps(curLine()) * repBeats(curLine())) === 0) { finishItem(k); return; }
         if (rampBeat(curLine(), k)) {
           S.phase = 'rest'; S.pos = null; S.k = 0; S.restFull = true;
@@ -2291,6 +2307,7 @@ SD rlrlrlrl</pre>
           return;
         }
       } else if (k > 0 && k % repBeats(curLine()) === 0) {
+        passDone();
         var got = addRep(S, 1);
         if (got === 'line') { lineRest(); return; }
         if (got) { advance(idx); return; }
@@ -2299,6 +2316,12 @@ SD rlrlrlrl</pre>
       if (ladderMask()) { renderPractice(); return; }
     }
     updateLive();
+  }
+
+  /* a clean pass: the run of mistakes is over, and so is the note about the last drop */
+  function passDone() {
+    cleanPass(curLine());
+    if (S.noticeKind === 'drop') { S.notice = ''; S.noticeKind = ''; }
   }
 
   /* a step or line finished: new count-in, new tempo, new click mask if the step has one */
@@ -2312,6 +2335,7 @@ SD rlrlrlrl</pre>
 
   /* a line finished (the chime is on this downbeat): a second of rest, then the next line after a bar of count-in */
   function lineRest() {
+    if (S.noticeKind) { S.notice = ''; S.noticeKind = ''; }
     S.phase = 'rest'; S.pos = null; S.k = 0; S.restFull = false;
     applyStepMask();
     Click.restThen(RAMP.rest, restartClick);
@@ -2405,6 +2429,7 @@ SD rlrlrlrl</pre>
       METHOD_ORDER.map(function (k) { return '<dt>' + esc(METHODS[k].name) + '</dt><dd>' + esc(ruleText(k)) + '</dd>'; }).join('') +
       '<dt>Routine</dt><dd>' + esc(ruleText('routine')) + '</dd>' +
       '<dt>A mistake</dt><dd>restarts the count for that step on the next bar, or on the bar after when you press it on beat 3 or 4, so there are always at least 2 beats to get ready. The click never stops.</dd>' +
+      '<dt>Three in a row</dt><dd>three mistakes without a clean pass between them drop the tempo by two steps (a 2 BPM step: 4 BPM down), after a second of rest and a bar of count-in. If it happens again at a tempo it already dropped from, it also says: rest or move on.</dd>' +
       '<dt>Bell</dt><dd>rings on the downbeat after each set: the passes at one tempo of a routine item, or each step of a ladder. The click rests a second, then a bar of count-in starts the next one.</dd>' +
       '<dt>Next time</dt><dd>start ' + CFG.drop + ' BPM below your highest clean tempo, never below the starting tempo of that type.</dd>' +
       '<dt>Change</dt><dd>any of this on the Methods tab.</dd>';
@@ -2853,10 +2878,24 @@ SD rlrlrlrl</pre>
       applyStepMask();
       if (S.running) restartCountIn();
     } else if (act === 'miss') {
-      mistake(S);
+      var md = mistake(S);
       tlMistake();
       /* time is already up: a broken last pass ends the item instead of starting another */
       if (S.type === 'routine' && S.running && curLine().finishing) { finishItem(0); return; }
+      if (md) {
+        /* three in a row: down two steps, after a second of rest and a bar of count-in at the new tempo */
+        S.noticeKind = md.kind;
+        S.notice = md.kind === 'warn'
+          ? 'Three mistakes in a row at ' + md.from + ' BPM again. Rest or move on. Down to ' + md.to + ' BPM.'
+          : 'Three mistakes in a row: down to ' + md.to + ' BPM.';
+        Click.bpm = md.to;
+        if (S.running && S.phase !== 'rest') {
+          S.phase = 'rest'; S.pos = null; S.k = 0; S.restFull = false;
+          Click.restThen(RAMP.rest, restartClick);
+        }
+        renderPractice();
+        return;
+      }
       if (S.running && S.phase !== 'countin' && S.phase !== 'rest') {
         S.base = resumeBar(S.last);
         S.phase = 'wait';
@@ -2892,6 +2931,7 @@ SD rlrlrlrl</pre>
 
   /* resting: the click is already resting and restarts by itself on the next item */
   function routineDone(resting) {
+    if (S.noticeKind) { S.notice = ''; S.noticeKind = ''; }
     var cl = curLine();
     cl.done = true;
     cl.finishing = false;
